@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 141439824}
   - component: {fileID: 141439823}
   - component: {fileID: 141439822}
-  - component: {fileID: 141439821}
+  - component: {fileID: 141439825}
   m_Layer: 0
   m_Name: MarchingCube
   m_TagString: Untagged
@@ -142,21 +142,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &141439821
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 141439820}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 302f30c06a1e3ef4f8342652de623887, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pointsValue: 0000000000000000
-  triangulationIndex: 0
-  cubeSize: 10
 --- !u!23 &141439822
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -222,6 +207,28 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &141439825
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 141439820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260b87e92629722488a73c4b130fce1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  width: 20
+  height: 20
+  length: 20
+  surfaceLevel: 0.6
+  noiseScale: 2
+  noiseOffsetX: 0
+  noiseOffsetY: 0
+  noiseOffsetZ: 0
+  cubeSize: 1
+  activateDebug: 0
 --- !u!1 &645806712
 GameObject:
   m_ObjectHideFlags: 0

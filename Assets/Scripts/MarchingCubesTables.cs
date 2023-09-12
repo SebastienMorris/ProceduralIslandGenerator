@@ -8,15 +8,15 @@ public static class MarchingCubesTables
 		new int[] {0,4}, new int[] {1,5}, new int[] {2,6}, new int[] {3,7}
 	};
 
-	public static Vector3[] cubeCorners = new Vector3[] {
-		new Vector3(0, 0, 1),
-		new Vector3(1, 0, 1),
-		new Vector3(1, 0, 0),
-		new Vector3(0, 0, 0),
-		new Vector3(0, 1, 1),
-		new Vector3(1, 1, 1),
-		new Vector3(1, 1, 0),
-		new Vector3(0, 1, 0)
+	public static Vector3Int[] cubeCorners = new Vector3Int[] {
+		new Vector3Int(0, 0, 1),
+		new Vector3Int(1, 0, 1),
+		new Vector3Int(1, 0, 0),
+		new Vector3Int(0, 0, 0),
+		new Vector3Int(0, 1, 1),
+		new Vector3Int(1, 1, 1),
+		new Vector3Int(1, 1, 0),
+		new Vector3Int(0, 1, 0)
 	};
 
 	public static int[][] triangulationTable = {
