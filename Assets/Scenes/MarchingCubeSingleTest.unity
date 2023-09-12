@@ -222,7 +222,7 @@ MonoBehaviour:
   width: 20
   height: 20
   length: 20
-  surfaceLevel: 0.6
+  surfaceLevel: 0.5
   noiseScale: 2
   noiseOffsetX: 0
   noiseOffsetY: 0

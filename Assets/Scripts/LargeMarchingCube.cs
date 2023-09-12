@@ -56,7 +56,7 @@ public class LargeMarchingCube : MonoBehaviour
                             {
                                 Gizmos.color = Color.white;
 
-                                Vector3 point = transform.position + (new Vector3(x, y, z) * cubeSize);
+                                Vector3 point = transform.position + new Vector3(x * cubeSize, y * cubeSize, z * cubeSize);
 
                                 Gizmos.DrawSphere(point, 0.05f);
                             }
@@ -131,7 +131,7 @@ public class LargeMarchingCube : MonoBehaviour
                         Vector3Int cornerPos = new Vector3Int(x, y, z) + MarchingCubesTables.cubeCorners[i];
                         cubePoints[i] = pointsNoise[cornerPos.x, cornerPos.y, cornerPos.z];
                     }
-                    AssignCubeMeshData(new Vector3(x, y, z), cubePoints);
+                    AssignCubeMeshData(new Vector3(x * cubeSize, y * cubeSize, z * cubeSize), cubePoints);
                 }
             }
         }
@@ -176,14 +176,14 @@ public class LargeMarchingCube : MonoBehaviour
         //Debug.Log($"<{x}> <{y}> <{z}>");
        // Debug.Log($"<{AB}> <{BC}> <{AC}> <{BA}> <{CB}> <{CA}>");
 
-        //return (AB + BC + AC + BA + CB + CA) / 6;
-        return AB * BC * AC * BA * CB * CA;
+        return (AB + BC + AC + BA + CB + CA) / 6;
+       // return AB * BC * AC * BA * CB * CA;
     }
 
     private float _perlin3DFixed(float a, float b)
     {
-        //return Mathf.PerlinNoise(a, b);
-        return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
+        return Mathf.PerlinNoise(a, b);
+        //return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
     }
 
     private int CalculateTriangulationIndex(float[] cubePoints)
