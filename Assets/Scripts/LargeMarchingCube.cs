@@ -4,20 +4,19 @@ using UnityEngine;
 
 public class LargeMarchingCube : MonoBehaviour
 {
-    [SerializeField] private int width = 0;
-    [SerializeField] private int height = 0;
-    [SerializeField] private int length = 0;
+    [SerializeField] private Vector3Int globalDimensions = new Vector3Int(0, 0, 0);
+
+    [SerializeField] private Vector3Int dimensions = new Vector3Int(0, 0, 0);
 
     [SerializeField][Range(0,1)] private float surfaceLevel = 0f;
 
     [SerializeField] private float noiseScale = 0f;
-    [SerializeField] private float noiseOffsetX = 0f;
-    [SerializeField] private float noiseOffsetY = 0f;
-    [SerializeField] private float noiseOffsetZ = 0f;
+    [SerializeField] private Vector3 noiseOffset = new Vector3(0, 0, 0);
 
     [SerializeField] [Min(1)] private int cubeSize = 1;
 
     [SerializeField] private bool activateDebug = true;
+    [SerializeField] private Color debugColor = Color.white;
 
     private float[ , , ] pointsNoise;
 
@@ -30,31 +29,33 @@ public class LargeMarchingCube : MonoBehaviour
     {
         meshFilter = GetComponent<MeshFilter>();
 
-        pointsNoise = new float[width + 1, height + 1, length + 1];
+        pointsNoise = new float[dimensions.x + 1, dimensions.y + 1, dimensions.z + 1];
     }
 
+    /*
     private void Start()
     {
         ClearMeshData();
         GeneratePoints();
       //  CreateCubeMeshData();
-    }
+    }*/
 
     private void OnDrawGizmos()
     {
         if (activateDebug)
         {
-            for (int x = 0; x < width + 1; x++)
+            /*
+            for (int x = 0; x < dimensions.x + 1; x++)
             {
-                for (int y = 0; y < height + 1; y++)
+                for (int y = 0; y < dimensions.y + 1; y++)
                 {
-                    for (int z = 0; z < length + 1; z++)
+                    for (int z = 0; z < dimensions.z + 1; z++)
                     {
                         if (pointsNoise != null)
                         {
                             if (pointsNoise[x, y, z] >= surfaceLevel)
                             {
-                                Gizmos.color = Color.white;
+                                Gizmos.color = debugColor;
 
                                 Vector3 point = transform.position + new Vector3(x * cubeSize, y * cubeSize, z * cubeSize);
 
@@ -63,19 +64,39 @@ public class LargeMarchingCube : MonoBehaviour
                         }
                     }
                 }
-            }
+            }*/
+
+            Gizmos.color = debugColor;
+            Gizmos.DrawWireCube(transform.position, dimensions);
         }
     }
 
     private void Update()
     {
-        if(Input.GetKeyUp(KeyCode.G))
+        
+        if(Input.GetKeyUp(KeyCode.H))
         {
-            pointsNoise = new float[width + 1, height + 1, length + 1];
+            pointsNoise = new float[dimensions.x + 1, dimensions.y + 1, dimensions.z + 1];
             ClearMeshData();
             GeneratePoints();
             CreateCubeMeshData();
         }
+    }
+
+    public void StartGeneration(Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, float noiseScale, Vector3 noiseOffset, int cubeSize)
+    {
+        this.globalDimensions = globalDimensions;
+        this.dimensions = dimensions;
+        this.surfaceLevel = surfaceLevel;
+        this.noiseScale = noiseScale;
+        this.noiseOffset = noiseOffset;
+        this.cubeSize = cubeSize;
+
+        pointsNoise = new float[dimensions.x + 1, dimensions.y + 1, dimensions.z + 1];
+
+        ClearMeshData();
+        GeneratePoints();
+        CreateCubeMeshData();
     }
 
     private void ClearMeshData()
@@ -104,8 +125,8 @@ public class LargeMarchingCube : MonoBehaviour
             int pointIndex1 = MarchingCubesTables.edgeConnections[verticeIndex][0];
             int pointIndex2 = MarchingCubesTables.edgeConnections[verticeIndex][1];
 
-            Vector3 point1 = position + (MarchingCubesTables.cubeCorners[pointIndex1] * cubeSize);
-            Vector3 point2 = position + (MarchingCubesTables.cubeCorners[pointIndex2] * cubeSize);
+            Vector3 point1 = position + ((MarchingCubesTables.cubeCorners[pointIndex1] - new Vector3(dimensions.x / 2, dimensions.y / 2, dimensions.z / 2)) * cubeSize);
+            Vector3 point2 = position + ((MarchingCubesTables.cubeCorners[pointIndex2] - new Vector3(dimensions.x / 2, dimensions.y / 2, dimensions.z / 2)) * cubeSize);
 
             Vector3 vertice = (point1 + point2) / 2;
              
@@ -119,11 +140,11 @@ public class LargeMarchingCube : MonoBehaviour
 
     private void CreateCubeMeshData()
     {
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < dimensions.x; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < dimensions.y; y++)
             {
-                for (int z = 0; z < length; z++)
+                for (int z = 0; z < dimensions.z; z++)
                 {
                     float[] cubePoints = new float[8];
                     for(int i=0; i<cubePoints.Length; i++)
@@ -139,13 +160,13 @@ public class LargeMarchingCube : MonoBehaviour
 
     private void GeneratePoints()
     {
-        for(int x=0; x<width + 1; x++)
+        for(int x=0; x< dimensions.x + 1; x++)
         {
-            for(int y=0; y<height + 1; y++)
+            for(int y=0; y< dimensions.y + 1; y++)
             {
-                for(int z=0; z<length + 1; z++)
+                for(int z=0; z< dimensions.z + 1; z++)
                 {
-                    pointsNoise[x, y, z] = CalculatePerlinNoise(x, y, z);
+                    pointsNoise[x, y, z] = CalculatePerlinNoise(x, y , z);
                 }
             }
         }
@@ -153,9 +174,10 @@ public class LargeMarchingCube : MonoBehaviour
 
     private float CalculatePerlinNoise(float x, float y, float z)
     {
-        float xNoise = (x / width) * noiseScale + noiseOffsetX;
-        float yNoise = (y / height) * noiseScale + noiseOffsetY;
-        float zNoise = (z / length) * noiseScale + noiseOffsetZ;
+
+        float xNoise = (transform.position.x + x) / globalDimensions.x * noiseScale + noiseOffset.x;
+        float yNoise = (transform.position.y + y) / globalDimensions.y * noiseScale + noiseOffset.y;
+        float zNoise = (transform.position.z + z) / globalDimensions.z * noiseScale + noiseOffset.z;
 
         return PerlinNoise3D(xNoise, yNoise, zNoise);
         //return Mathf.PerlinNoise(xNoise, yNoise);
@@ -176,14 +198,14 @@ public class LargeMarchingCube : MonoBehaviour
         //Debug.Log($"<{x}> <{y}> <{z}>");
        // Debug.Log($"<{AB}> <{BC}> <{AC}> <{BA}> <{CB}> <{CA}>");
 
-        return (AB + BC + AC + BA + CB + CA) / 6;
-       // return AB * BC * AC * BA * CB * CA;
+        //return (AB + BC + AC + BA + CB + CA) / 6;
+        return AB * BC * AC * BA * CB * CA;
     }
 
     private float _perlin3DFixed(float a, float b)
     {
-        return Mathf.PerlinNoise(a, b);
-        //return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
+        //return Mathf.PerlinNoise(a, b);
+        return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
     }
 
     private int CalculateTriangulationIndex(float[] cubePoints)
