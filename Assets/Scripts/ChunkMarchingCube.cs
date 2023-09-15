@@ -17,6 +17,8 @@ public class ChunkMarchingCube : MonoBehaviour
 
     [SerializeField] private int chunkSize = 10;
 
+    [SerializeField] private bool interpolate = true;
+
     private List<GameObject> listChunks = new List<GameObject>();
 
     private void Update()
@@ -55,7 +57,7 @@ public class ChunkMarchingCube : MonoBehaviour
                     Vector3 chunkPos = transform.position + new Vector3((x - nbChunksX / 2) + 0.5f, (y - nbChunksY / 2) + 0.5f, (z - nbChunksZ / 2) + 0.5f) * chunkSize;
                     GameObject spawnedChunk = Instantiate(largeMarchingCubePrefab, chunkPos, transform.rotation, transform);
                     listChunks.Add(spawnedChunk);
-                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration(dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseScale, noiseOffset, cubeSize);
+                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration(interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseScale, noiseOffset, cubeSize);
                 }
             }
         }

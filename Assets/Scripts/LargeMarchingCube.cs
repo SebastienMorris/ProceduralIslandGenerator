@@ -18,6 +18,8 @@ public class LargeMarchingCube : MonoBehaviour
     [SerializeField] private bool activateDebug = true;
     [SerializeField] private Color debugColor = Color.white;
 
+    [SerializeField] bool interpolate = true;
+
     private float[ , , ] pointsNoise;
 
     private List<Vector3> vertices = new List<Vector3>();
@@ -83,8 +85,9 @@ public class LargeMarchingCube : MonoBehaviour
         }
     }
 
-    public void StartGeneration(Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, float noiseScale, Vector3 noiseOffset, int cubeSize)
+    public void StartGeneration(bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, float noiseScale, Vector3 noiseOffset, int cubeSize)
     {
+        this.interpolate = interpolate;
         this.globalDimensions = globalDimensions;
         this.dimensions = dimensions;
         this.surfaceLevel = surfaceLevel;
@@ -129,9 +132,11 @@ public class LargeMarchingCube : MonoBehaviour
             Vector3 point2 = position + ((MarchingCubesTables.cubeCorners[pointIndex2] - new Vector3(dimensions.x / 2, dimensions.y / 2, dimensions.z / 2)) * cubeSize);
 
             Vector3 vertice = (point1 + point2) / 2;
-             
+            if (interpolate)
+                vertice = (point1 + point2) / ((cubePoints[pointIndex1] + cubePoints[pointIndex2]) / surfaceLevel);
+
             vertices.Add(vertice);
-            triangles.Add(vertices.Count - 1);
+            triangles.Add(vertices.Count - 1); 
         }
 
        // ClearMeshData();
