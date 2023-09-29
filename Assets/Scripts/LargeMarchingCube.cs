@@ -27,6 +27,8 @@ public class LargeMarchingCube : MonoBehaviour
 
     private MeshFilter meshFilter;
 
+    [SerializeField] private Vector3Int testCoords = new Vector3Int();
+
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
@@ -83,6 +85,11 @@ public class LargeMarchingCube : MonoBehaviour
             GeneratePoints();
             CreateCubeMeshData();
         }
+
+        if (Input.GetKeyUp(KeyCode.T))
+        {
+            Test(testCoords.x, testCoords.y, testCoords.z);
+        }
     }
 
     public void StartGeneration(bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, float noiseScale, Vector3 noiseOffset, int cubeSize)
@@ -137,7 +144,8 @@ public class LargeMarchingCube : MonoBehaviour
 
             vertices.Add(vertice);
             triangles.Add(vertices.Count - 1); 
-        }
+            
+        } 
 
        // ClearMeshData();
         BuildMesh();
@@ -159,7 +167,7 @@ public class LargeMarchingCube : MonoBehaviour
                     }
                     AssignCubeMeshData(new Vector3(x * cubeSize, y * cubeSize, z * cubeSize), cubePoints);
                 }
-            }
+            } 
         }
     }
 
@@ -225,5 +233,11 @@ public class LargeMarchingCube : MonoBehaviour
         }
 
         return index;
+    }
+
+    private void Test(float x, float y, float z)
+    {
+        print("N1 : " + CalculatePerlinNoise(x, y, z));
+        print("N2 : " + CalculatePerlinNoise(x, y, z));
     }
 }
