@@ -19,12 +19,15 @@ public class ChunkMarchingCube : MonoBehaviour
 
     [SerializeField] private bool interpolate = true;
 
+    [SerializeField] private IslandNoise islandNoise;
+
     private List<GameObject> listChunks = new List<GameObject>();
 
     private void Update()
     {
         if (Input.GetKeyUp(KeyCode.G))
         {
+            GenerateNoiseMap();
             CreateChunks();
         }
 
@@ -38,6 +41,11 @@ public class ChunkMarchingCube : MonoBehaviour
     {
         Gizmos.color = Color.white;
         Gizmos.DrawWireCube(transform.position, dimensions);
+    }
+
+    private void GenerateNoiseMap()
+    {
+        islandNoise.GenerateNoiseMap();
     }
 
     private void CreateChunks()
@@ -57,7 +65,7 @@ public class ChunkMarchingCube : MonoBehaviour
                     Vector3 chunkPos = transform.position + new Vector3((x - nbChunksX / 2) + 0.5f, (y - nbChunksY / 2) + 0.5f, (z - nbChunksZ / 2) + 0.5f) * chunkSize;
                     GameObject spawnedChunk = Instantiate(largeMarchingCubePrefab, chunkPos, transform.rotation, transform);
                     listChunks.Add(spawnedChunk);
-                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration(interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseScale, noiseOffset, cubeSize);
+                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration(interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseScale, noiseOffset, cubeSize, islandNoise);
                 }
             }
         }

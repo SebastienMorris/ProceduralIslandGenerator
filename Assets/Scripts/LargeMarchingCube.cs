@@ -18,7 +18,9 @@ public class LargeMarchingCube : MonoBehaviour
     [SerializeField] private bool activateDebug = true;
     [SerializeField] private Color debugColor = Color.white;
 
-    [SerializeField] bool interpolate = true;
+    [SerializeField] private bool interpolate = true;
+
+    [SerializeField] private IslandNoise islandNoise;
 
     private float[ , , ] pointsNoise;
 
@@ -92,7 +94,7 @@ public class LargeMarchingCube : MonoBehaviour
         }
     }
 
-    public void StartGeneration(bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, float noiseScale, Vector3 noiseOffset, int cubeSize)
+    public void StartGeneration(bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, float noiseScale, Vector3 noiseOffset, int cubeSize, IslandNoise islandNoise)
     {
         this.interpolate = interpolate;
         this.globalDimensions = globalDimensions;
@@ -101,6 +103,7 @@ public class LargeMarchingCube : MonoBehaviour
         this.noiseScale = noiseScale;
         this.noiseOffset = noiseOffset;
         this.cubeSize = cubeSize;
+        this.islandNoise = islandNoise;
 
         pointsNoise = new float[dimensions.x + 1, dimensions.y + 1, dimensions.z + 1];
 
@@ -132,6 +135,7 @@ public class LargeMarchingCube : MonoBehaviour
         {
             if (verticeIndex == -1)
                 break;
+
             int pointIndex1 = MarchingCubesTables.edgeConnections[verticeIndex][0];
             int pointIndex2 = MarchingCubesTables.edgeConnections[verticeIndex][1];
 
@@ -143,7 +147,7 @@ public class LargeMarchingCube : MonoBehaviour
                 vertice = (point1 + point2) / ((cubePoints[pointIndex1] + cubePoints[pointIndex2]) / surfaceLevel);
 
             vertices.Add(vertice);
-            triangles.Add(vertices.Count - 1); 
+            triangles.Add(vertices.Count - 1);
             
         } 
 
@@ -188,18 +192,19 @@ public class LargeMarchingCube : MonoBehaviour
     private float CalculatePerlinNoise(float x, float y, float z)
     {
 
-        float xNoise = (transform.position.x + x) / globalDimensions.x * noiseScale + noiseOffset.x;
-        float yNoise = (transform.position.y + y) / globalDimensions.y * noiseScale + noiseOffset.y;
-        float zNoise = (transform.position.z + z) / globalDimensions.z * noiseScale + noiseOffset.z;
+        float xNoise = (transform.position.x + x); // / globalDimensions.x * noiseScale + noiseOffset.x;
+        float yNoise = (transform.position.y + y); // / globalDimensions.y * noiseScale + noiseOffset.y;
+        float zNoise = (transform.position.z + z); // / globalDimensions.z * noiseScale + noiseOffset.z;
 
         return PerlinNoise3D(xNoise, yNoise, zNoise);
+        //return PerlinNoise3D(xNoise, yNoise, zNoise);
         //return Mathf.PerlinNoise(xNoise, yNoise);
     }
 
     private float PerlinNoise3D(float x, float y, float z)
     {
-        y++;
-        z += 2;
+        //y++;
+        //z += 2;
         float AB = _perlin3DFixed(x, y);
         float BC = _perlin3DFixed(y, z);
         float AC = _perlin3DFixed(x, z);
@@ -209,16 +214,17 @@ public class LargeMarchingCube : MonoBehaviour
         float CA = _perlin3DFixed(z, x);
 
         //Debug.Log($"<{x}> <{y}> <{z}>");
-       // Debug.Log($"<{AB}> <{BC}> <{AC}> <{BA}> <{CB}> <{CA}>");
+        //Debug.Log($"<{AB}> <{BC}> <{AC}> <{BA}> <{CB}> <{CA}>");
 
-        //return (AB + BC + AC + BA + CB + CA) / 6;
-        return AB * BC * AC * BA * CB * CA;
+        return (AB + BC + AC + BA + CB + CA) / 6;
+        //return AB * BC * AC * BA * CB * CA;
     }
 
     private float _perlin3DFixed(float a, float b)
     {
         //return Mathf.PerlinNoise(a, b);
-        return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
+        //return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
+        return islandNoise.GetIslandNoise(a, b);
     }
 
     private int CalculateTriangulationIndex(float[] cubePoints)
