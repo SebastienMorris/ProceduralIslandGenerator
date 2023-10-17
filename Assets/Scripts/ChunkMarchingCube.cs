@@ -5,21 +5,21 @@ using UnityEngine;
 public class ChunkMarchingCube : MonoBehaviour
 {
     [SerializeField] private Vector3Int dimensions = new Vector3Int(0, 0, 0);
-
     [SerializeField] [Range(0, 1)] private float surfaceLevel = 0f;
 
-    [SerializeField] private float noiseScale = 0f;
+    [Min(0.01f)][SerializeField] private float noiseScale = 0.01f;
+    [Range(1, 20)] [SerializeField] private int octaves;
+    [Range(0, 1)] [SerializeField] private float persistance;
+    [Min(1)] [SerializeField] private float lacunarity;
+    [Min(0)] [SerializeField] private int seed;
     [SerializeField] private Vector3 noiseOffset = new Vector3(0f, 0f, 0f);
 
+
     [SerializeField] [Min(1)] private int cubeSize = 1;
-
     [SerializeField] private GameObject largeMarchingCubePrefab;
-
     [SerializeField] private int chunkSize = 10;
 
     [SerializeField] private bool interpolate = true;
-
-    [SerializeField] private IslandNoise islandNoise;
 
     private List<GameObject> listChunks = new List<GameObject>();
 
@@ -27,7 +27,6 @@ public class ChunkMarchingCube : MonoBehaviour
     {
         if (Input.GetKeyUp(KeyCode.G))
         {
-            GenerateNoiseMap();
             CreateChunks();
         }
 
@@ -41,11 +40,6 @@ public class ChunkMarchingCube : MonoBehaviour
     {
         Gizmos.color = Color.white;
         Gizmos.DrawWireCube(transform.position, dimensions);
-    }
-
-    private void GenerateNoiseMap()
-    {
-        islandNoise.GenerateNoiseMap();
     }
 
     private void CreateChunks()
@@ -65,7 +59,10 @@ public class ChunkMarchingCube : MonoBehaviour
                     Vector3 chunkPos = transform.position + new Vector3((x - nbChunksX / 2) + 0.5f, (y - nbChunksY / 2) + 0.5f, (z - nbChunksZ / 2) + 0.5f) * chunkSize;
                     GameObject spawnedChunk = Instantiate(largeMarchingCubePrefab, chunkPos, transform.rotation, transform);
                     listChunks.Add(spawnedChunk);
-                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration(interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseScale, noiseOffset, cubeSize, islandNoise);
+
+                    NoiseData noiseData = LandMassNoise.CreateNoiseData(seed, octaves, noiseScale, persistance, lacunarity);
+                    
+                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration( noiseData, interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseOffset);
                 }
             }
         }

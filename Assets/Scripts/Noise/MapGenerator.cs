@@ -15,6 +15,7 @@ public class MapGenerator : MonoBehaviour
     [SerializeField] private Vector2 offset;
 
     [SerializeField] private bool useSurfaceLevel = false;
+    [SerializeField] private bool toggleNoiseMap = true;
     [Range(0, 1)] [SerializeField] private float surfaceLevel = 0.5f;
 
     //[SerializeField] private Gradient colourGradient;
@@ -26,9 +27,39 @@ public class MapGenerator : MonoBehaviour
 
     private void GenerateMap()
     {
-        float[,] noiseMap = LandMassNoise.GenerateNoiseMap(mapSize, seed, noiseScale, octaves, persistance, lacunarity, offset);
+        NoiseData noiseData = LandMassNoise.CreateNoiseData(seed, octaves, noiseScale, persistance, lacunarity);
 
-        DrawNoiseMap(noiseMap);
+        if (toggleNoiseMap)
+        {
+            float[,] noiseMap = LandMassNoise.GenerateNoiseMap(mapSize, seed, noiseScale, octaves, persistance, lacunarity, offset);
+            DrawNoiseMap(noiseMap);
+        }
+        else
+        {
+            float[,,] noiseMap = LandMassNoise.Generate3DNoiseMap(new Vector3Int(mapSize.x, mapSize.y, mapSize.x), seed, noiseScale, octaves, persistance, lacunarity, new Vector3(offset.x, offset.y, offset.x));
+            float[,] noiseMap2D = new float[noiseMap.GetLength(0), noiseMap.GetLength(1)];
+            for(int x=0; x<noiseMap2D.GetLength(0); x++)
+            {
+                for(int y = 0; y<noiseMap2D.GetLength(1); y++)
+                {
+                    noiseMap2D[x, y] = noiseMap[x, y, 0];
+                }
+            }
+            DrawNoiseMap(noiseMap2D);
+            /*noiseMap = new float[mapSize.x, mapSize.y];
+            for(int x = 0; x<mapSize.x; x++)
+            {
+                for(int y = 0; y<mapSize.y; y++)
+                {
+                    float sampleX = x + offset.x;
+                    float sampleY = y  + offset.y;
+
+                    noiseMap[x, y] = LandMassNoise.Noise(sampleX, sampleY, noiseData);
+                }
+            }*/
+
+        }
+
     }
 
     private void DrawNoiseMap(float[,] noiseMap)

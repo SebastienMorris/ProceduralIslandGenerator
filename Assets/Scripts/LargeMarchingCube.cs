@@ -10,17 +10,18 @@ public class LargeMarchingCube : MonoBehaviour
 
     [SerializeField][Range(0,1)] private float surfaceLevel = 0f;
 
-    [SerializeField] private float noiseScale = 0f;
+    //[SerializeField] private float noiseScale = 0f;
     [SerializeField] private Vector3 noiseOffset = new Vector3(0, 0, 0);
-
-    [SerializeField] [Min(1)] private int cubeSize = 1;
 
     [SerializeField] private bool activateDebug = true;
     [SerializeField] private Color debugColor = Color.white;
 
     [SerializeField] private bool interpolate = true;
 
-    [SerializeField] private IslandNoise islandNoise;
+    //[SerializeField] private int seed = 0;
+    //[SerializeField] private int octaves = 0;
+
+    private NoiseData noiseData;
 
     private float[ , , ] pointsNoise;
 
@@ -87,23 +88,17 @@ public class LargeMarchingCube : MonoBehaviour
             GeneratePoints();
             CreateCubeMeshData();
         }
-
-        if (Input.GetKeyUp(KeyCode.T))
-        {
-            Test(testCoords.x, testCoords.y, testCoords.z);
-        }
     }
 
-    public void StartGeneration(bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, float noiseScale, Vector3 noiseOffset, int cubeSize, IslandNoise islandNoise)
+    public void StartGeneration( NoiseData noiseData, bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, Vector3 noiseOffset)
     {
+        this.noiseData = noiseData;
+
         this.interpolate = interpolate;
         this.globalDimensions = globalDimensions;
         this.dimensions = dimensions;
         this.surfaceLevel = surfaceLevel;
-        this.noiseScale = noiseScale;
         this.noiseOffset = noiseOffset;
-        this.cubeSize = cubeSize;
-        this.islandNoise = islandNoise;
 
         pointsNoise = new float[dimensions.x + 1, dimensions.y + 1, dimensions.z + 1];
 
@@ -139,8 +134,8 @@ public class LargeMarchingCube : MonoBehaviour
             int pointIndex1 = MarchingCubesTables.edgeConnections[verticeIndex][0];
             int pointIndex2 = MarchingCubesTables.edgeConnections[verticeIndex][1];
 
-            Vector3 point1 = position + ((MarchingCubesTables.cubeCorners[pointIndex1] - new Vector3(dimensions.x / 2, dimensions.y / 2, dimensions.z / 2)) * cubeSize);
-            Vector3 point2 = position + ((MarchingCubesTables.cubeCorners[pointIndex2] - new Vector3(dimensions.x / 2, dimensions.y / 2, dimensions.z / 2)) * cubeSize);
+            Vector3 point1 = position + (MarchingCubesTables.cubeCorners[pointIndex1] - new Vector3(dimensions.x / 2, dimensions.y / 2, dimensions.z / 2));
+            Vector3 point2 = position + (MarchingCubesTables.cubeCorners[pointIndex2] - new Vector3(dimensions.x / 2, dimensions.y / 2, dimensions.z / 2));
 
             Vector3 vertice = (point1 + point2) / 2;
             if (interpolate)
@@ -169,7 +164,7 @@ public class LargeMarchingCube : MonoBehaviour
                         Vector3Int cornerPos = new Vector3Int(x, y, z) + MarchingCubesTables.cubeCorners[i];
                         cubePoints[i] = pointsNoise[cornerPos.x, cornerPos.y, cornerPos.z];
                     }
-                    AssignCubeMeshData(new Vector3(x * cubeSize, y * cubeSize, z * cubeSize), cubePoints);
+                    AssignCubeMeshData(new Vector3(x, y, z), cubePoints);
                 }
             } 
         }
@@ -183,18 +178,18 @@ public class LargeMarchingCube : MonoBehaviour
             {
                 for(int z=0; z< dimensions.z + 1; z++)
                 {
-                    pointsNoise[x, y, z] = CalculatePerlinNoise(x, y , z);
+                    pointsNoise[x, y, z] = CalculateNoise(x, y , z);
                 }
             }
         }
     }
 
-    private float CalculatePerlinNoise(float x, float y, float z)
+    private float CalculateNoise(float x, float y, float z)
     {
 
-        float xNoise = (transform.position.x + x); // / globalDimensions.x * noiseScale + noiseOffset.x;
-        float yNoise = (transform.position.y + y); // / globalDimensions.y * noiseScale + noiseOffset.y;
-        float zNoise = (transform.position.z + z); // / globalDimensions.z * noiseScale + noiseOffset.z;
+        float xNoise = (transform.position.x + x) / globalDimensions.x + noiseOffset.x;    // / globalDimensions.x * noiseScale
+        float yNoise = (transform.position.y + y) / globalDimensions.y + noiseOffset.y;    // / globalDimensions.x * noiseScale
+        float zNoise = (transform.position.z + z) / globalDimensions.z + noiseOffset.z;    // / globalDimensions.x * noiseScale
 
         return PerlinNoise3D(xNoise, yNoise, zNoise);
         //return Mathf.PerlinNoise(xNoise, yNoise);
@@ -202,15 +197,13 @@ public class LargeMarchingCube : MonoBehaviour
 
     private float PerlinNoise3D(float x, float y, float z)
     {
-        //y++;
-        //z += 2;
-        float AB = _perlin3DFixed(x, y);
-        float BC = _perlin3DFixed(y, z);
-        float AC = _perlin3DFixed(x, z);
+        float AB = LandMassNoise.Noise( x, y, noiseData);
+        float BC = LandMassNoise.Noise(y, z, noiseData);
+        float AC = LandMassNoise.Noise(x, z, noiseData);
 
-        float BA = _perlin3DFixed(y, x);
-        float CB = _perlin3DFixed(z, y);
-        float CA = _perlin3DFixed(z, x);
+        float BA = LandMassNoise.Noise(y, x, noiseData);
+        float CB = LandMassNoise.Noise(z, y, noiseData);
+        float CA = LandMassNoise.Noise(z, x, noiseData);
 
         //Debug.Log($"<{x}> <{y}> <{z}>");
         //Debug.Log($"<{AB}> <{BC}> <{AC}> <{BA}> <{CB}> <{CA}>");
@@ -219,12 +212,11 @@ public class LargeMarchingCube : MonoBehaviour
         //return AB * BC * AC * BA * CB * CA;
     }
 
-    private float _perlin3DFixed(float a, float b)
+    /*private float _perlin3DFixed(float a, float b)
     {
         //return Mathf.PerlinNoise(a, b);
         //return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
-        return islandNoise.GetIslandNoise(a, b);
-    }
+    }*/
 
     private int CalculateTriangulationIndex(float[] cubePoints)
     {
@@ -238,11 +230,5 @@ public class LargeMarchingCube : MonoBehaviour
         }
 
         return index;
-    }
-
-    private void Test(float x, float y, float z)
-    {
-        print("N1 : " + CalculatePerlinNoise(x, y, z));
-        print("N2 : " + CalculatePerlinNoise(x, y, z));
     }
 }
