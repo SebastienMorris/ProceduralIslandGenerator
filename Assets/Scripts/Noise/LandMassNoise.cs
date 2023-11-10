@@ -182,6 +182,50 @@ public static class LandMassNoise
         return noiseValue / normalization;
     }
 
+    public static float Noise3D(float x, float y, float z, NoiseData noiseData)
+    {
+        System.Random prng = new System.Random(noiseData.seed);
+        Vector3[] octaveOffsets = new Vector3[noiseData.octaves];
+        for (int i = 0; i < noiseData.octaves; i++)
+        {
+            float offsetX = prng.Next(-1000000, 1000000);
+            float offsetY = prng.Next(-1000000, 1000000);
+            float offsetZ = prng.Next(-1000000, 1000000);
+
+            octaveOffsets[i] = new Vector3(offsetX, offsetY, offsetZ);
+        }
+
+        float amplitude = 1;
+        float frequency = 1;
+        float noiseValue = 0;
+        float normalization = 0;
+
+        for (int i = 0; i < noiseData.octaves; i++)
+        {
+            float sampleX = x / noiseData.scale * frequency + octaveOffsets[i].x;
+            float sampleY = y / noiseData.scale * frequency + octaveOffsets[i].y;
+            float sampleZ = z / noiseData.scale * frequency + octaveOffsets[i].z;
+
+            float AB = Mathf.PerlinNoise(sampleX, sampleY);
+            float BC = Mathf.PerlinNoise(sampleY, sampleZ);
+            float AC = Mathf.PerlinNoise(sampleX, sampleZ);
+
+            float BA = Mathf.PerlinNoise(sampleY, sampleX);
+            float CB = Mathf.PerlinNoise(sampleZ, sampleY);
+            float CA = Mathf.PerlinNoise(sampleZ, sampleX);
+
+            float perlinValue = (AB + BC + AC + BA + CB + CA) / 6;
+
+            noiseValue += perlinValue * amplitude;
+
+            normalization += amplitude;
+            amplitude *= noiseData.persistance;
+            frequency *= noiseData.lacunarity;
+        }
+
+        return noiseValue / normalization;
+    }
+
     public static NoiseData CreateNoiseData(int seed, int octaves, float scale, float persistance, float lacunarity)
     {
         NoiseData noiseData = new NoiseData();

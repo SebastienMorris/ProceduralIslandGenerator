@@ -36,7 +36,7 @@ public class MapGenerator : MonoBehaviour
         }
         else
         {
-            float[,,] noiseMap = LandMassNoise.Generate3DNoiseMap(new Vector3Int(mapSize.x, mapSize.y, mapSize.x), seed, noiseScale, octaves, persistance, lacunarity, new Vector3(offset.x, offset.y, offset.x));
+            /*float[,,] noiseMap = LandMassNoise.Generate3DNoiseMap(new Vector3Int(mapSize.x, mapSize.y, mapSize.x), seed, noiseScale, octaves, persistance, lacunarity, new Vector3(offset.x, offset.y, offset.x));
             float[,] noiseMap2D = new float[noiseMap.GetLength(0), noiseMap.GetLength(1)];
             for(int x=0; x<noiseMap2D.GetLength(0); x++)
             {
@@ -45,18 +45,23 @@ public class MapGenerator : MonoBehaviour
                     noiseMap2D[x, y] = noiseMap[x, y, 0];
                 }
             }
-            DrawNoiseMap(noiseMap2D);
-            /*noiseMap = new float[mapSize.x, mapSize.y];
+            DrawNoiseMap(noiseMap2D);*/
+            float[,] noiseMap2D = new float[mapSize.x, mapSize.y];
             for(int x = 0; x<mapSize.x; x++)
             {
                 for(int y = 0; y<mapSize.y; y++)
                 {
-                    float sampleX = x + offset.x;
-                    float sampleY = y  + offset.y;
+                    for(int z=0; z<mapSize.x; z++)
+                    {
+                        float sampleX = x + offset.x;
+                        float sampleY = y + offset.y;
+                        float samplez = 0 + offset.x;
 
-                    noiseMap[x, y] = LandMassNoise.Noise(sampleX, sampleY, noiseData);
+                        noiseMap2D[x, y] = LandMassNoise.Noise3D(sampleX, sampleY, samplez,noiseData);
+                    }
                 }
-            }*/
+            }
+            DrawNoiseMap(noiseMap2D);
 
         }
 
