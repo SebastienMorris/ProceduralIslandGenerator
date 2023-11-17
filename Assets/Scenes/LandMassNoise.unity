@@ -163,6 +163,8 @@ MonoBehaviour:
   useSurfaceLevel: 1
   toggleNoiseMap: 1
   surfaceLevel: 0.5
+  a: 60
+  b: 30
 --- !u!4 &394533221
 Transform:
   m_ObjectHideFlags: 0
