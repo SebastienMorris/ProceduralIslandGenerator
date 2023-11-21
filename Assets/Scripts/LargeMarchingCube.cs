@@ -32,6 +32,8 @@ public class LargeMarchingCube : MonoBehaviour
 
     [SerializeField] private Vector3Int testCoords = new Vector3Int();
 
+    private CustomNoiseGen noiseGen;
+
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
@@ -182,6 +184,11 @@ public class LargeMarchingCube : MonoBehaviour
                 }
             }
         }
+    }
+
+    private double ClalculateCustomNoise(double x, double y, double z, int nbOctaves, double persistance)
+    {
+        return noiseGen.OctavePerlin(x, y, z, nbOctaves, persistance);
     }
 
     private float CalculateNoise(float x, float y, float z)
