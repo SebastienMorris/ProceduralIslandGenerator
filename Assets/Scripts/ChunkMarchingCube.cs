@@ -21,6 +21,8 @@ public class ChunkMarchingCube : MonoBehaviour
 
     [SerializeField] private bool interpolate = true;
 
+    [SerializeField] private CustomNoiseGen noiseGen;
+
     private List<GameObject> listChunks = new List<GameObject>();
 
     private void Update()
@@ -62,7 +64,7 @@ public class ChunkMarchingCube : MonoBehaviour
 
                     NoiseData noiseData = LandMassNoise.CreateNoiseData(seed, octaves, noiseScale, persistance, lacunarity);
                     
-                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration( noiseData, interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseOffset);
+                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration( noiseGen, noiseData, interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseOffset);
                 }
             }
         }

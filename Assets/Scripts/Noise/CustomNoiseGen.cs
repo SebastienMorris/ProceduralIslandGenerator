@@ -2,16 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CustomNoiseGen
+public class CustomNoiseGen : MonoBehaviour
 {
-    public static int repeat;
-    public CustomNoiseGen(int repeat = -1)
+    private int repeat;
+    /*public CustomNoiseGen(int repeat = -1)
     {
         this.repeat = repeat;
-    }
+    }*/
 
-    private static readonly int[] permutation = { 151,160,137,91,90,15,
-    131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
+    private int[] p = { 151,160,137,91,90,15,                 
+    131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,    
     190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
     88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
     77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
@@ -23,8 +23,7 @@ public class CustomNoiseGen
     251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
     49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
     138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180,
-
-    151,160,137,91,90,15,
+            151,160,137,91,90,15,
     131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
     190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
     88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -36,28 +35,41 @@ public class CustomNoiseGen
     129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
     251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
     49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-    138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180 };
+    138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
+    };
 
-    public static double OctavePerlin(double x, double y, double z, int nbOctaves, double persistance)
+    /*private int[] p;                                                    
+
+    private void Awake()
     {
-        double total = 0;
-        double frequency = 1;
-        double amplitude = 1;
-        double maxValue = 0;
+        p = new int[512];
+        for (int x = 0; x < 512; x++)
+        {
+            p[x] = permutation[x % 256];
+        }
+    }*/
+
+    public float OctavePerlin(float x, float y, float z, int nbOctaves, float persistance)
+    {
+        float total = 0;
+        float frequency = 1;
+        float amplitude = 1;
+        float maxValue = 0;
 
         for(int i=0; i<nbOctaves; i++)
         {
-            total += Perlin(x * frequency, y * frequency, z * frequency) * amplitude;
+            float OURGYTIUH = Perlin(x * frequency, y * frequency, z * frequency) * amplitude;
+            total += OURGYTIUH;
             maxValue += amplitude;
 
-            amplitude *= persistance; //compare divide to divide
+            amplitude *= persistance;
             frequency *= 2;
         }
 
         return total / maxValue;
     }
 
-    public static double Perlin(double x, double y, double z)
+    public float Perlin(float x, float y, float z)
     {
         if(repeat > 0)
         {
@@ -70,45 +82,45 @@ public class CustomNoiseGen
         int yCube = (int)y & 255;
         int zCube = (int)z & 255;
 
-        double xLoc = x - (int)x;
-        double yLoc = y - (int)y;
-        double zLoc = z - (int)z;
+        float xLoc = x - (int)x;
+        float yLoc = y - (int)y;
+        float zLoc = z - (int)z;
 
-        double u = Fade(xLoc);
-        double v = Fade(yLoc);
-        double w = Fade(zLoc);
+        float u = Fade(xLoc);
+        float v = Fade(yLoc);
+        float w = Fade(zLoc);
 
         int aaa, aba, aab, abb, baa, bba, bab, bbb;
-        aaa = permutation[permutation[permutation[xCube] + yCube] + zCube];
-        aba = permutation[permutation[permutation[xCube] + Inc(yCube)] + zCube];
-        aab = permutation[permutation[permutation[xCube] + yCube] + Inc(zCube)];
-        abb = permutation[permutation[permutation[xCube] + Inc(yCube)] + Inc(zCube)];
-        baa = permutation[permutation[permutation[Inc(xCube)] + yCube] + zCube];
-        bba = permutation[permutation[permutation[Inc(xCube)] + Inc(yCube)] + zCube];
-        bab = permutation[permutation[permutation[Inc(xCube)] + yCube] + Inc(zCube)];
-        bbb = permutation[permutation[permutation[Inc(xCube)] + Inc(yCube)] + Inc(zCube)];
+        aaa = p[p[p[xCube] + yCube] + zCube];
+        aba = p[p[p[xCube] + Inc(yCube)] + zCube];
+        aab = p[p[p[xCube] + yCube] + Inc(zCube)];
+        abb = p[p[p[xCube] + Inc(yCube)] + Inc(zCube)];
+        baa = p[p[p[Inc(xCube)] + yCube] + zCube];
+        bba = p[p[p[Inc(xCube)] + Inc(yCube)] + zCube];
+        bab = p[p[p[Inc(xCube)] + yCube] + Inc(zCube)];
+        bbb = p[p[p[Inc(xCube)] + Inc(yCube)] + Inc(zCube)];
 
-        double x1, x2, y1, y2;
-
-        x1 = Lerp(Gradient(aaa, xLoc, yLoc, zLoc), Gradient(baa, xLoc - 1, yLoc, zLoc), u);
-        x2 = Lerp(Gradient(aba, xLoc, yLoc - 1, zLoc), Gradient(bba, xLoc - 1, yLoc, zLoc - 1), u);
-
+        float x1, x2, y1, y2;
+        x1 = Lerp(Gradient(aaa, xLoc, yLoc, zLoc), Gradient(baa, xLoc - 1, yLoc, zLoc), u);                                 
+        x2 = Lerp(Gradient(aba, xLoc, yLoc - 1, zLoc), Gradient(bba, xLoc - 1, yLoc - 1, zLoc), u);
         y1 = Lerp(x1, x2, v);
 
         x1 = Lerp(Gradient(aab, xLoc, yLoc, zLoc - 1), Gradient(bab, xLoc - 1, yLoc, zLoc - 1), u);
-        x2 = Lerp(Gradient(abb, xLoc, yLoc - 1, zLoc), Gradient(bbb, xLoc - 1, yLoc - 1, zLoc - 1), u);
-
+        x2 = Lerp(Gradient(abb, xLoc, yLoc - 1, zLoc - 1), Gradient(bbb, xLoc - 1, yLoc - 1, zLoc - 1),
+                      u);
         y2 = Lerp(x1, x2, v);
+
+        print(Lerp(y1, y2, w));
 
         return (Lerp(y1, y2, w) + 1) / 2;
     }
 
-    private static double Fade(double t)
+    private float Fade(float t)
     {
         return t * t * t * (t * (t * 6 - 15) + 10);
     }
 
-    private static int Inc(int nb)
+    private int Inc(int nb)
     {
         nb++;
         if(repeat > 0)
@@ -118,7 +130,7 @@ public class CustomNoiseGen
         return nb;
     }
 
-    private static double Gradient(int hash, double x, double y, double z)
+    private float Gradient(int hash, float x, float y, float z)
     {
         switch (hash & 0xF)
         {
@@ -142,7 +154,7 @@ public class CustomNoiseGen
         }
     }
 
-    private static double Lerp(double a, double b, double x)
+    private float Lerp(float a, float b, float x)
     {
         return a + x * (b - a);
     }

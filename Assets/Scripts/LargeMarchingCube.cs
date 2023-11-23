@@ -92,8 +92,10 @@ public class LargeMarchingCube : MonoBehaviour
         }
     }
 
-    public void StartGeneration( NoiseData noiseData, bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, Vector3 noiseOffset)
+    public void StartGeneration( CustomNoiseGen noiseGen, NoiseData noiseData, bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, Vector3 noiseOffset)
     {
+        this.noiseGen = noiseGen;
+
         this.noiseData = noiseData;
 
         this.interpolate = interpolate;
@@ -180,15 +182,20 @@ public class LargeMarchingCube : MonoBehaviour
             {
                 for(int z=0; z< dimensions.z + 1; z++)
                 {
-                    pointsNoise[x, y, z] = CalculateNoise(x, y , z);
+                    pointsNoise[x, y, z] = CalculateCustomNoise(x, y , z);
+                    //print(pointsNoise[x, y, z]);
                 }
             }
         }
     }
 
-    private double ClalculateCustomNoise(double x, double y, double z, int nbOctaves, double persistance)
+    private float CalculateCustomNoise(float x, float y, float z)
     {
-        return noiseGen.OctavePerlin(x, y, z, nbOctaves, persistance);
+        float xNoise = (transform.position.x + x) / globalDimensions.x * noiseData.scale + noiseOffset.x;    // / globalDimensions.x * noiseScale
+        float yNoise = (transform.position.y + y) / globalDimensions.y * noiseData.scale + noiseOffset.y;    // / globalDimensions.x * noiseScale
+        float zNoise = (transform.position.z + z) / globalDimensions.z * noiseData.scale + noiseOffset.z;    // / globalDimensions.x * noiseScale
+
+        return noiseGen.OctavePerlin(xNoise, yNoise, zNoise, noiseData.octaves, noiseData.persistance);
     }
 
     private float CalculateNoise(float x, float y, float z)
