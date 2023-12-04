@@ -59,13 +59,13 @@ public class CustomNoiseGen : MonoBehaviour
         for(int i=0; i<nbOctaves; i++)
         {
             float OURGYTIUH = Perlin(x * frequency, y * frequency, z * frequency) * amplitude;
+
             total += OURGYTIUH;
             maxValue += amplitude;
 
             amplitude *= persistance;
             frequency *= 2;
         }
-
         return total / maxValue;
     }
 
@@ -101,16 +101,14 @@ public class CustomNoiseGen : MonoBehaviour
         bbb = p[p[p[Inc(xCube)] + Inc(yCube)] + Inc(zCube)];
 
         float x1, x2, y1, y2;
-        x1 = Lerp(Gradient(aaa, xLoc, yLoc, zLoc), Gradient(baa, xLoc - 1, yLoc, zLoc), u);                                 
-        x2 = Lerp(Gradient(aba, xLoc, yLoc - 1, zLoc), Gradient(bba, xLoc - 1, yLoc - 1, zLoc), u);
-        y1 = Lerp(x1, x2, v);
+        x1 = Mathf.Lerp(Gradient(aaa, xLoc, yLoc, zLoc), Gradient(baa, xLoc - 1, yLoc, zLoc), u);                                 
+        x2 = Mathf.Lerp(Gradient(aba, xLoc, yLoc - 1, zLoc), Gradient(bba, xLoc - 1, yLoc - 1, zLoc), u);
+        y1 = Mathf.Lerp(x1, x2, v);
 
-        x1 = Lerp(Gradient(aab, xLoc, yLoc, zLoc - 1), Gradient(bab, xLoc - 1, yLoc, zLoc - 1), u);
-        x2 = Lerp(Gradient(abb, xLoc, yLoc - 1, zLoc - 1), Gradient(bbb, xLoc - 1, yLoc - 1, zLoc - 1),
+        x1 = Mathf.Lerp(Gradient(aab, xLoc, yLoc, zLoc - 1), Gradient(bab, xLoc - 1, yLoc, zLoc - 1), u);
+        x2 = Mathf.Lerp(Gradient(abb, xLoc, yLoc - 1, zLoc - 1), Gradient(bbb, xLoc - 1, yLoc - 1, zLoc - 1),
                       u);
-        y2 = Lerp(x1, x2, v);
-
-        print(Lerp(y1, y2, w));
+        y2 = Mathf.Lerp(x1, x2, v);
 
         return (Lerp(y1, y2, w) + 1) / 2;
     }
