@@ -195,7 +195,7 @@ public class LargeMarchingCube : MonoBehaviour
         float yNoise = (transform.position.y + y) / globalDimensions.y * noiseData.scale + noiseOffset.y;    // / globalDimensions.x * noiseScale
         float zNoise = (transform.position.z + z) / globalDimensions.z * noiseData.scale + noiseOffset.z;    // / globalDimensions.x * noiseScale
 
-        return noiseGen.OctavePerlin(xNoise, yNoise, zNoise, noiseData.octaves, noiseData.persistance);
+        return noiseGen.OctavePerlin(xNoise, yNoise, zNoise, noiseData.octaves, noiseData.persistance, noiseData.seed);
     }
 
     private float CalculateNoise(float x, float y, float z)

@@ -49,18 +49,27 @@ public class CustomNoiseGen : MonoBehaviour
         }
     }*/
 
-    public float OctavePerlin(float x, float y, float z, int nbOctaves, float persistance)
+    public float OctavePerlin(float x, float y, float z, int nbOctaves, float persistance, int seed)
     {
         float total = 0;
         float frequency = 1;
         float amplitude = 1;
         float maxValue = 0;
 
-        for(int i=0; i<nbOctaves; i++)
+        System.Random prng = new System.Random(seed);
+        Vector3[] seedOffsets = new Vector3[nbOctaves];
+        for (int i = 0; i < nbOctaves; i++)
         {
-            float OURGYTIUH = Perlin(x * frequency, y * frequency, z * frequency) * amplitude;
+            float offsetX = prng.Next(-1000000, 1000000);
+            float offsetY = prng.Next(-1000000, 1000000);
+            float offsetZ = prng.Next(-1000000, 1000000);
 
-            total += OURGYTIUH;
+            seedOffsets[i] = new Vector3(offsetX, offsetY, offsetZ);
+        }
+
+        for (int i=0; i<nbOctaves; i++)
+        {
+            total += Perlin(x * frequency + seedOffsets[i].x, y * frequency + seedOffsets[i].y, z * frequency + seedOffsets[i].z) * amplitude;
             maxValue += amplitude;
 
             amplitude *= persistance;
@@ -68,7 +77,7 @@ public class CustomNoiseGen : MonoBehaviour
         }
         return total / maxValue;
     }
-
+     
     public float Perlin(float x, float y, float z)
     {
         if(repeat > 0)
