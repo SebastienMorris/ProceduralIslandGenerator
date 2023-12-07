@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CustomNoiseGen : MonoBehaviour
 {
-    private int repeat;
+    [SerializeField]private int repeat;
     /*public CustomNoiseGen(int repeat = -1)
     {
         this.repeat = repeat;
@@ -57,19 +57,12 @@ public class CustomNoiseGen : MonoBehaviour
         float maxValue = 0;
 
         System.Random prng = new System.Random(seed);
-        Vector3[] seedOffsets = new Vector3[nbOctaves];
-        for (int i = 0; i < nbOctaves; i++)
+        for (int i=0; i<nbOctaves; i++)
         {
             float offsetX = prng.Next(-1000000, 1000000);
             float offsetY = prng.Next(-1000000, 1000000);
             float offsetZ = prng.Next(-1000000, 1000000);
-
-            seedOffsets[i] = new Vector3(offsetX, offsetY, offsetZ);
-        }
-
-        for (int i=0; i<nbOctaves; i++)
-        {
-            total += Perlin(x * frequency + seedOffsets[i].x, y * frequency + seedOffsets[i].y, z * frequency + seedOffsets[i].z) * amplitude;
+            total += Perlin(x * frequency, y * frequency, z * frequency) * amplitude;
             maxValue += amplitude;
 
             amplitude *= persistance;
@@ -77,15 +70,15 @@ public class CustomNoiseGen : MonoBehaviour
         }
         return total / maxValue;
     }
-     
+
     public float Perlin(float x, float y, float z)
     {
-        if(repeat > 0)
+        /*if(repeat > 0)
         {
             x = x % repeat;
             y = y % repeat;
             z = z % repeat;
-        }
+        }*/
 
         int xCube = (int)x & 255;
         int yCube = (int)y & 255;
@@ -119,7 +112,7 @@ public class CustomNoiseGen : MonoBehaviour
                       u);
         y2 = Mathf.Lerp(x1, x2, v);
 
-        return (Lerp(y1, y2, w) + 1) / 2;
+        return (Mathf.Lerp(y1, y2, w) + 1) / 2;
     }
 
     private float Fade(float t)
@@ -130,10 +123,10 @@ public class CustomNoiseGen : MonoBehaviour
     private int Inc(int nb)
     {
         nb++;
-        if(repeat > 0)
+        /*if(repeat > 0)
         {
             nb %= repeat;
-        }
+        }*/
         return nb;
     }
 
@@ -159,6 +152,24 @@ public class CustomNoiseGen : MonoBehaviour
             case 0xF: return -y - z;
             default: return 0;
         }
+    }
+
+    public float grad(int hash, float x, float y, float z)
+    {
+        int h = hash & 15;                                    // Take the hashed value and take the first 4 bits of it (15 == 0b1111)
+        float u = h < 8 /* 0b1000 */ ? x : y;                // If the most significant bit (MSB) of the hash is 0 then set u = x.  Otherwise y.
+
+        float v;                                             // In Ken Perlin's original implementation this was another conditional operator (?:).  I
+                                                              // expanded it for readability.
+
+        if (h < 4 /* 0b0100 */)                                // If the first and second significant bits are 0 set v = y
+            v = y;
+        else if (h == 12 /* 0b1100 */ || h == 14 /* 0b1110*/)  // If the first and second significant bits are 1 set v = x
+            v = x;
+        else                                                  // If the first and second significant bits are not equal (0/1, 1/0) set v = z
+            v = z;
+
+        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v); // Use the last 2 bits to decide if u and v are positive or negative.  Then return their addition.
     }
 
     private float Lerp(float a, float b, float x)

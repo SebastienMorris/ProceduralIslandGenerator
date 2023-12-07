@@ -152,6 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89c82f8fa3d66f3408961c0570ee32d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  repeat: 0
 --- !u!4 &480249545
 Transform:
   m_ObjectHideFlags: 0
@@ -314,10 +315,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 095dcc9790590234b8da014426c8e023, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dimensions: {x: 20, y: 20, z: 20}
+  dimensions: {x: 40, y: 40, z: 40}
   surfaceLevel: 0.5
   noiseScale: 1
-  octaves: 1
+  octaves: 3
   persistance: 0.5
   lacunarity: 2
   seed: 0

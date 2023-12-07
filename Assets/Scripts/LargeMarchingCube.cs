@@ -183,7 +183,6 @@ public class LargeMarchingCube : MonoBehaviour
                 for(int z=0; z< dimensions.z + 1; z++)
                 {
                     pointsNoise[x, y, z] = CalculateCustomNoise(x, y , z);
-                    //print(pointsNoise[x, y, z]);
                 }
             }
         }

@@ -18,11 +18,15 @@ public class MapGenerator : MonoBehaviour
     [SerializeField] private bool toggleNoiseMap = true;
     [Range(0, 1)] [SerializeField] private float surfaceLevel = 0.5f;
 
+    [SerializeField] private FalloffMap falloffMap;
+    [SerializeField] [Range(0, 10)] private float steepness = 3;
+    [SerializeField] [Range(0, 10)] private float centerSize = 2.2f;
+
     //[SerializeField] private Gradient colourGradient;
 
     private void OnValidate()
     {
-        GenerateMap();
+        GenerateFalloffMap();
     }
 
     private void GenerateMap()
@@ -101,5 +105,11 @@ public class MapGenerator : MonoBehaviour
 
         displayTexture.sharedMaterial.mainTexture = texture;
         displayTexture.transform.localScale = new Vector3(width, 1, height);
+    }
+
+    private void GenerateFalloffMap()
+    {
+        float[,] falloffMapValues = falloffMap.Generate2DFallOffMap(mapSize, steepness, centerSize);
+        DrawNoiseMap(falloffMapValues);
     }
 }

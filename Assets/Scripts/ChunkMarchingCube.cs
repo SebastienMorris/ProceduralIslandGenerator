@@ -11,7 +11,7 @@ public class ChunkMarchingCube : MonoBehaviour
     [Range(1, 20)] [SerializeField] private int octaves;
     [Range(0, 1)] [SerializeField] private float persistance;
     [Min(1)] [SerializeField] private float lacunarity;
-    [Min(0)] [SerializeField] private int seed;
+    [SerializeField] private int seed;
     [SerializeField] private Vector3 noiseOffset = new Vector3(0f, 0f, 0f);
 
 
@@ -42,6 +42,11 @@ public class ChunkMarchingCube : MonoBehaviour
     {
         Gizmos.color = Color.white;
         Gizmos.DrawWireCube(transform.position, dimensions);
+    }
+
+    private void CreateSeedValue()
+    {
+        //Random.InitState(stringSeed.GetHashCode());
     }
 
     private void CreateChunks()
