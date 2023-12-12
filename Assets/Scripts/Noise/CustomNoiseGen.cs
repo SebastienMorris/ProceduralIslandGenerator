@@ -49,6 +49,19 @@ public class CustomNoiseGen : MonoBehaviour
         }
     }*/
 
+    private void Start()
+    {
+        
+    }
+
+    private void LerpTest(float a, float b, float x)
+    {
+        print("a : " + a + " // b: " + b + " // x: " + x);
+        print("Mathf lerp " + Mathf.Lerp(a, b, x));
+        print("Mathf Inverselerp " + Mathf.InverseLerp(a, b, x));
+        print("Lerp function " + Lerp(a, b, x));
+    }
+
     public float OctavePerlin(float x, float y, float z, int nbOctaves, float persistance, int seed)
     {
         float total = 0;
@@ -62,7 +75,7 @@ public class CustomNoiseGen : MonoBehaviour
             float offsetX = prng.Next(-1000000, 1000000);
             float offsetY = prng.Next(-1000000, 1000000);
             float offsetZ = prng.Next(-1000000, 1000000);
-            total += Perlin(x * frequency, y * frequency, z * frequency) * amplitude;
+            total += Perlin(x * frequency + offsetX, y * frequency  + offsetY, z * frequency + offsetZ) * amplitude;
             maxValue += amplitude;
 
             amplitude *= persistance;
@@ -84,9 +97,9 @@ public class CustomNoiseGen : MonoBehaviour
         int yCube = (int)y & 255;
         int zCube = (int)z & 255;
 
-        float xLoc = x - (int)x;
-        float yLoc = y - (int)y;
-        float zLoc = z - (int)z;
+        float xLoc = Mathf.Abs(x - (int)x);
+        float yLoc = Mathf.Abs(y - (int)y);
+        float zLoc = Mathf.Abs(z - (int)z);
 
         float u = Fade(xLoc);
         float v = Fade(yLoc);
