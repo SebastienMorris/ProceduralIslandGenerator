@@ -23,7 +23,8 @@ public class LargeMarchingCube : MonoBehaviour
 
     private NoiseData noiseData;
 
-    private float[ , , ] pointsNoise;
+    private float[,,] pointsNoise;
+    private float[,,] fallOffMapValues;
 
     private List<Vector3> vertices = new List<Vector3>();
     private List<int> triangles = new List<int>();
@@ -92,8 +93,10 @@ public class LargeMarchingCube : MonoBehaviour
         }
     }
 
-    public void StartGeneration( CustomNoiseGen noiseGen, NoiseData noiseData, bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, Vector3 noiseOffset)
+    public void StartGeneration(float[,,] fallOffMapValues, CustomNoiseGen noiseGen, NoiseData noiseData, bool interpolate, Vector3Int globalDimensions,Vector3Int dimensions, float surfaceLevel, Vector3 noiseOffset)
     {
+        this.fallOffMapValues = fallOffMapValues;
+
         this.noiseGen = noiseGen;
 
         this.noiseData = noiseData;
@@ -182,7 +185,10 @@ public class LargeMarchingCube : MonoBehaviour
             {
                 for(int z=0; z< dimensions.z + 1; z++)
                 {
-                    pointsNoise[x, y, z] = CalculateCustomNoise(x, y , z);
+                    int fallOffX = Mathf.RoundToInt(transform.localPosition.x) + x + globalDimensions.x / 2 - dimensions.x / 2;
+                    int fallOffY = Mathf.RoundToInt(transform.localPosition.y) + y + globalDimensions.y / 2 - dimensions.y / 2;
+                    int fallOffZ = Mathf.RoundToInt(transform.localPosition.z) + z + globalDimensions.z / 2 - dimensions.z / 2;
+                    pointsNoise[x, y, z] = Mathf.Clamp01(CalculateCustomNoise(x, y, z) - fallOffMapValues[fallOffX, fallOffY, fallOffZ]);
                 }
             }
         }

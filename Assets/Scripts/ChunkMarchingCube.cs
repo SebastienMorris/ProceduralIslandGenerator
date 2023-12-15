@@ -21,7 +21,14 @@ public class ChunkMarchingCube : MonoBehaviour
 
     [SerializeField] private bool interpolate = true;
 
+    [SerializeField][Range(0.1f, 10)] private float steepness = 3;
+    [SerializeField][Range(0.1f, 10)] private float centerSize = 2.2f;
+
     [SerializeField] private CustomNoiseGen noiseGen;
+    [SerializeField] private FalloffMap fallOffMap;
+
+    [SerializeField] private bool useFallOffMap = false;
+    [SerializeField] private AnimationCurve fallOffCurve;
 
     private List<GameObject> listChunks = new List<GameObject>();
 
@@ -51,6 +58,13 @@ public class ChunkMarchingCube : MonoBehaviour
 
     private void CreateChunks()
     {
+        float[,,] fallOffMapValues = new float[dimensions.x + 1, dimensions.y + 1, dimensions.z + 1];
+        if (useFallOffMap)
+        {
+            fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), steepness, centerSize);
+            //fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), fallOffCurve);
+        }
+
         int nbChunksX = dimensions.x / chunkSize;
         int nbChunksY = dimensions.y / chunkSize;
         int nbChunksZ = dimensions.z / chunkSize;
@@ -69,7 +83,7 @@ public class ChunkMarchingCube : MonoBehaviour
 
                     NoiseData noiseData = LandMassNoise.CreateNoiseData(seed.GetHashCode(), octaves, noiseScale, persistance, lacunarity);
                     
-                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration( noiseGen, noiseData, interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseOffset);
+                    spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration( fallOffMapValues, noiseGen, noiseData, interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseOffset);
                 }
             }
         }
