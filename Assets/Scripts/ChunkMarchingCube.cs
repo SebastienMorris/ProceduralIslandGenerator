@@ -11,7 +11,7 @@ public class ChunkMarchingCube : MonoBehaviour
     [Range(1, 20)] [SerializeField] private int octaves;
     [Range(0, 1)] [SerializeField] private float persistance;
     [Min(1)] [SerializeField] private float lacunarity;
-    [SerializeField] private string seed;
+    [SerializeField] private int seed;
     [SerializeField] private Vector3 noiseOffset = new Vector3(0f, 0f, 0f);
 
 
@@ -81,7 +81,7 @@ public class ChunkMarchingCube : MonoBehaviour
                     GameObject spawnedChunk = Instantiate(largeMarchingCubePrefab, chunkPos, transform.rotation, transform);
                     listChunks.Add(spawnedChunk);
 
-                    NoiseData noiseData = LandMassNoise.CreateNoiseData(seed.GetHashCode(), octaves, noiseScale, persistance, lacunarity);
+                    NoiseData noiseData = LandMassNoise.CreateNoiseData(seed, octaves, noiseScale, persistance, lacunarity);
                     
                     spawnedChunk.GetComponent<LargeMarchingCube>().StartGeneration( fallOffMapValues, noiseGen, noiseData, interpolate, dimensions, new Vector3Int(chunkSize, chunkSize, chunkSize), surfaceLevel, noiseOffset);
                 }

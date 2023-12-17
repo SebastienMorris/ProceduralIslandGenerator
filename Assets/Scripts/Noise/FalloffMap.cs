@@ -59,10 +59,6 @@ public class FalloffMap : MonoBehaviour
                     float y = (j / (float)size.y) * 2 - 1;
                     float z = (h / (float)size.z) * 2 - 1;
 
-                    float xValue = falloffCurve.Evaluate(Mathf.Abs(x));
-                    float yValue = falloffCurve.Evaluate(Mathf.Abs(y));
-                    float zValue = falloffCurve.Evaluate(Mathf.Abs(z));
-
                     float value = Mathf.Max(falloffCurve.Evaluate(Mathf.Abs(x)), falloffCurve.Evaluate(Mathf.Abs(y)), falloffCurve.Evaluate(Mathf.Abs(z)));
 
                     map[i, j, h] = value;

@@ -32,7 +32,7 @@ public class MapGenerator : MonoBehaviour
 
     private void OnValidate()
     {
-        Generate3DFalloffMap();
+        GenerateFalloffMap();
     }
 
     private void GenerateMap()
@@ -195,8 +195,8 @@ public class MapGenerator : MonoBehaviour
 
     private void Generate3DFalloffMap()
     {
-        //float[,,] fallOffMapValues = falloffMap.GenerateFallOffMap(mapSize, steepness, centerSize);
-        float[,,] fallOffMapValues = falloffMap.GenerateFallOffMap(mapSize, falloffCurve);
+        float[,,] fallOffMapValues = falloffMap.GenerateFallOffMap(mapSize, steepness, centerSize);
+        //float[,,] fallOffMapValues = falloffMap.GenerateFallOffMap(mapSize, falloffCurve);
         Draw3DNoiseMap(fallOffMapValues);
     }
 }
