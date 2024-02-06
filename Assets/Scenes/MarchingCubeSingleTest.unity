@@ -340,14 +340,14 @@ MonoBehaviour:
   octaves: 3
   persistance: 0.5
   lacunarity: 2
-  seed: 
+  seed: 0
   noiseOffset: {x: 0, y: 0, z: 0}
   cubeSize: 1
   largeMarchingCubePrefab: {fileID: 109730463941254062, guid: a74a6f0582b0f564485678813af7beb9, type: 3}
   chunkSize: 10
   interpolate: 0
   steepness: 3
-  centerSize: 2.2
+  centerSize: 1
   noiseGen: {fileID: 480249544}
   fallOffMap: {fileID: 892455561}
   useFallOffMap: 0
@@ -384,6 +384,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  debug: 1
 --- !u!4 &785088675
 Transform:
   m_ObjectHideFlags: 0

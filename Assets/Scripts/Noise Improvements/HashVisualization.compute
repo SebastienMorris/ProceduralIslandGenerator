@@ -1,0 +1,14 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel ConfigureProcedural
+
+	#if defined(UNITY_PROCEDURAL_INSTANCING_ENABLED)
+		StructuredBuffer<uint> _Hashes;
+	#endif
+
+	float4 _Config;
+
+	private void ConfigureProcedural()
+	{
+		#if defined(UNITY_PROCEDURAL_INSTANCING_ENABLED)
+		float v = floor(_Config.y * unity_InstanceID);
+	}
