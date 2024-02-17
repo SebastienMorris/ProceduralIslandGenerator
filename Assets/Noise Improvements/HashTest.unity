@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca9ba21bb0d17404fa9a1e69ec043c66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  instanceMesh: {fileID: -5495902117074765545, guid: f1f08d97080a74f23bb37c0c1b38d2c4, type: 3}
+  instanceMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: e87e46f2ff303a34aaba9a4df2504d79, type: 2}
   resolution: 16
 --- !u!4 &543543703
