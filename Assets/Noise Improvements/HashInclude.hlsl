@@ -8,7 +8,7 @@ float4 _Config;
 void ConfigureProcedural()
 {
     #if defined(UNITY_PROCEDURAL_INSTANCING_ENABLED)
-    float v = floor(_Config.y * unity_InstanceID);
+    float v = floor(_Config.y * unity_InstanceID + 0.00001);
     float u = unity_InstanceID -  _Config.x * v;
 
     unity_ObjectToWorld = 0.0;
@@ -22,7 +22,7 @@ float3 GetHashColour()
 {
     #if defined(UNITY_PROCEDURAL_INSTANCING_ENABLED)
         uint hash = _Hashes[unity_InstanceID];
-        return _Config.y * _Config.y * hash;
+        return (hash & 255) / 255.0;
     #else
         return 1.0;
     #endif

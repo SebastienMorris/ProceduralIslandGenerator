@@ -154,7 +154,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   instanceMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: e87e46f2ff303a34aaba9a4df2504d79, type: 2}
-  resolution: 16
+  resolution: 32
 --- !u!4 &543543703
 Transform:
   m_ObjectHideFlags: 0

@@ -14,9 +14,19 @@ public class HashVisualization : MonoBehaviour
         [WriteOnly]
         public NativeArray<uint> hashes;
 
+        public int resolution;
+        public float invResolution;
+
         public void Execute(int i)
         {
-            hashes[i] = (uint)i;
+            int v = (int)floor(invResolution * i + 0.00001f);
+            int u = i - resolution * v - resolution / 2;
+            v -= resolution / 2;
+
+            var hash = new SmallXXHash(0);
+            hash.Eat(u);
+            hash.Eat(v);
+            hashes[i] = hash;
         }
     }
 
@@ -42,7 +52,9 @@ public class HashVisualization : MonoBehaviour
 
         new HashJob
         {
-            hashes = _hashes
+            hashes = _hashes,
+            resolution = this.resolution,
+            invResolution = 1f / this.resolution
         }.ScheduleParallel(_hashes.Length, resolution, default).Complete();
 
         _hashesBuffer.SetData(_hashes);
