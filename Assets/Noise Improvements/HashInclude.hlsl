@@ -22,7 +22,7 @@ float3 GetHashColour()
 {
     #if defined(UNITY_PROCEDURAL_INSTANCING_ENABLED)
         uint hash = _Hashes[unity_InstanceID];
-        return (hash & 255) / 255.0;
+        return float3(hash & 255, (hash >> 8) & 255, (hash >> 16) & 255) / 255.0;
     #else
         return 1.0;
     #endif

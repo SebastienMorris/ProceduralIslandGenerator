@@ -17,13 +17,15 @@ public class HashVisualization : MonoBehaviour
         public int resolution;
         public float invResolution;
 
+        public SmallXXHash hash;
+        
         public void Execute(int i)
         {
             int v = (int)floor(invResolution * i + 0.00001f);
             int u = i - resolution * v - resolution / 2;
             v -= resolution / 2;
             
-            hashes[i] =  SmallXXHash.Seed(0).Eat(u).Eat(v);
+            hashes[i] =  hash.Eat(u).Eat(v);
         }
     }
 
@@ -34,6 +36,8 @@ public class HashVisualization : MonoBehaviour
     [SerializeField] private Material material;
 
     [SerializeField, Range(1, 512)] private int resolution = 16;
+
+    [SerializeField] private int seed = 0;
 
     private NativeArray<uint> _hashes;
 
@@ -51,7 +55,8 @@ public class HashVisualization : MonoBehaviour
         {
             hashes = _hashes,
             resolution = this.resolution,
-            invResolution = 1f / this.resolution
+            invResolution = 1f / this.resolution,
+            hash = SmallXXHash.Seed(seed)
         }.ScheduleParallel(_hashes.Length, resolution, default).Complete();
 
         _hashesBuffer.SetData(_hashes);
