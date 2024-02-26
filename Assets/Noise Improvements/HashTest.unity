@@ -155,6 +155,23 @@ MonoBehaviour:
   instanceMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: e87e46f2ff303a34aaba9a4df2504d79, type: 2}
   resolution: 32
+  seed: 0
+  displacement: 0
+  domain:
+    translation:
+      x: 0
+      y: 0
+      z: 0
+    rotation:
+      x: 0
+      y: 0
+      z: 0
+    scale:
+      x: 8
+      y: 8
+      z: 8
+  shape: 0
+  instanceScale: 2
 --- !u!4 &543543703
 Transform:
   m_ObjectHideFlags: 0
