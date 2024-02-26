@@ -195,8 +195,8 @@ public class MapGenerator : MonoBehaviour
 
     private void Generate3DFalloffMap()
     {
-        float[,,] fallOffMapValues = falloffMap.GenerateAltFallOffMap(mapSize, steepness, centerSize);
-        //float[,,] fallOffMapValues = falloffMap.GenerateFallOffMap(mapSize, falloffCurve);
+        //float[,,] fallOffMapValues = falloffMap.GenerateAltFallOffMap(mapSize, steepness, centerSize);
+        float[,,] fallOffMapValues = falloffMap.GenerateFallOffMap(mapSize, steepness, centerSize);
         Draw3DNoiseMap(fallOffMapValues);
     }
 }

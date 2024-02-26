@@ -22,7 +22,7 @@ public class ChunkMarchingCube : MonoBehaviour
     [SerializeField] private bool interpolate = true;
 
     [SerializeField][Range(0.1f, 10)] private float steepness = 3;
-    [SerializeField][Range(0.1f, 1)] private float centerSize = 2.2f;
+    [SerializeField][Range(0.1f, 10)] private float centerSize = 2.2f;
 
     [SerializeField] private CustomNoiseGen noiseGen;
     [SerializeField] private FalloffMap fallOffMap;
@@ -66,7 +66,7 @@ public class ChunkMarchingCube : MonoBehaviour
         float[,,] fallOffMapValues = new float[dimensions.x + 1, dimensions.y + 1, dimensions.z + 1];
         if (useFallOffMap)
         {
-            fallOffMapValues = fallOffMap.GenerateCircularFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), steepness, centerSize);
+            fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), steepness, centerSize);
             //fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), fallOffCurve);
         }
 
