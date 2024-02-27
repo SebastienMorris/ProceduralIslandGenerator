@@ -1,0 +1,5 @@
+#include "NoiseInclude.hlsl"
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel ConfigureProcedural
+
