@@ -16,7 +16,7 @@ public abstract class Visualisation : MonoBehaviour
     [SerializeField] private Mesh instanceMesh;
     [SerializeField] private Material material;
 
-    [SerializeField, Range(1, 512)] private int resolution = 16;
+    [SerializeField, Range(1, 1024)] private int resolution = 16;
 
     [SerializeField, Range(-0.5f, 0.5f)] private float displacement = 0.1f;
     
