@@ -8,7 +8,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditorInternal;
 using UnityEngine;
-
+using UnityEngine.Serialization;
 using static Unity.Mathematics.math;
 using static Noise;
 using Vector3 = UnityEngine.Vector3;
@@ -43,7 +43,7 @@ public class ChunkMarchingCube : MonoBehaviour
     [SerializeField] private ComputeBuffer triangleBuffer;
     [SerializeField] private ComputeBuffer triCountBuffer;
 
-    [SerializeField] private int numPointsPerAxis = 30;
+    [FormerlySerializedAs("numPointsPerAxis")] [SerializeField] private int resolution = 30;
     [SerializeField] private int numThreadsPerAxis = 8;
     int numPointsPerChunk;
 
@@ -52,6 +52,8 @@ public class ChunkMarchingCube : MonoBehaviour
 
     private NativeArray<float3x4> positions;
     private NativeArray<float4> noise4;
+
+    private float[,,] fallOffMapValues;
     
     private float[] finalNoise;
     private float3[] finalPositions;
@@ -96,34 +98,21 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	void InitChunks()
 	{
-        numPointsPerChunk = numPointsPerAxis * chunkSize * chunkSize * chunkSize;
-		int numVoxelsPerAxis = numPointsPerAxis - 1;
+        numPointsPerChunk = resolution * chunkSize * chunkSize * chunkSize;
+		int numVoxelsPerAxis = resolution - 1;
 		int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
 		int maxTriangleCount = numVoxels * 5;
 
-		int length = dimensions.x * dimensions.y * dimensions.z * numPointsPerAxis;
-		length = length / 4 + (length & 1);
+		int length = dimensions.x * dimensions.y * dimensions.z * resolution;
+		length = length / 4;
 
         numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
 
 		triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
 		pointsBuffer = new ComputeBuffer(length*4, sizeof(float) * 4);
 		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
-
-		positions = new NativeArray<float3x4>(length, Allocator.Persistent);
-		noise4 = new NativeArray<float4>(length, Allocator.Persistent);
-
-		GetPositions(length);
-		CreateNoise(length);
-
-		if (useFallOffMap)
-		{
-			float[,,] fallOffMapValues = fallOffMap.GenerateCircularFallOffMap(new Vector3Int(dimensions.x, dimensions.y, dimensions.z), steepness, centerSize);
-			ApplyFalloffToNoise(noise4.Reinterpret<float>(4 * 4), fallOffMapValues);
-			//fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), fallOffCurve);
-		}
-		else finalNoise = noise4.Reinterpret<float>(4 * 4).ToArray();
-		finalPositions = positions.Reinterpret<float3>(3 * 4 * 4).ToArray();
+		
+		fallOffMapValues = fallOffMap.GenerateCircularFallOffMap(new Vector3Int(dimensions.x, dimensions.y, dimensions.z), steepness, centerSize);
 
 		// Go through all coords and create a chunk there if one doesn't already exist
 		int i = 0;
@@ -151,6 +140,7 @@ public class ChunkMarchingCube : MonoBehaviour
 	IslandChunk CreateChunk(Vector3Int coord)
 	{
 		GameObject obj = new GameObject($"Chunk ({coord.x}, {coord.y}, {coord.z})");
+		obj.transform.position = coord;
 		IslandChunk chunkScript = obj.AddComponent<IslandChunk>();
 		chunkScript.coord = coord;
 		return chunkScript;
@@ -162,15 +152,45 @@ public class ChunkMarchingCube : MonoBehaviour
 		Vector3 centre = CentreFromCoord(coord);
 
 		Vector3 worldBounds = new Vector3(numChunks.x, numChunks.y, numChunks.z) * boundsSize;*/
+        
+      //  int length = chunkSize * chunkSize * chunkSize * resolution;
+        //length = length / 4 + (length & 1);
+        
+        positions = new NativeArray<float3x4>(numPointsPerChunk / 4, Allocator.Persistent);
+        noise4 = new NativeArray<float4>(numPointsPerChunk / 4, Allocator.Persistent);
+
+        GetPositions(numPointsPerChunk / 4, chunk.transform.localToWorldMatrix, new Vector3Int(chunkSize, chunkSize, chunkSize));
+        CreateNoise(numPointsPerChunk / 4);
+		
+        float[,,] chunkFalloff = new float[chunkSize, chunkSize, chunkSize];
+        
+        for (int i = 0; i < chunkSize; i++)
+		{
+			for (int j = 0; j < chunkSize; j++)
+			{
+				for (int h = 0; h < chunkSize; h++)
+				{
+					//chunkFalloff[i, j, h] = fallOffMapValues[i, j, h];
+				}
+			}
+		}
+        
+        if (useFallOffMap)
+        {
+	        ApplyFalloffToNoise(noise4.Reinterpret<float>(4 * 4), chunkFalloff);
+        }
+        else finalNoise = noise4.Reinterpret<float>(4 * 4).ToArray();
+        finalPositions = positions.Reinterpret<float3>(3 * 4 * 4).ToArray();
+        
 
         List<float4> posAndNoise = new();
-		for (int i = numPointsPerChunk * index; i < numPointsPerChunk * index + numPointsPerChunk; ++i) posAndNoise.Add(new(finalPositions[i], finalNoise[i]));
+		for (int i = 0; i < finalPositions.Length; ++i) posAndNoise.Add(new(finalPositions[i], finalNoise[i]));
 		pointsBuffer.SetData(posAndNoise);
 
 		triangleBuffer.SetCounterValue(0);
 		marchingCubesShader.SetBuffer(0, "points", pointsBuffer);
 		marchingCubesShader.SetBuffer(0, "triangles", triangleBuffer);
-		marchingCubesShader.SetInt("numPointsPerAxis", numPointsPerAxis);
+		marchingCubesShader.SetInt("numPointsPerAxis", resolution);
 		marchingCubesShader.SetFloat("isoLevel", surfaceLevel);
 
 		marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
@@ -251,7 +271,7 @@ public class ChunkMarchingCube : MonoBehaviour
         }
     }
 
-    private void GetPositions(int length)
+    private void GetPositions(int length, float4x4 trs, Vector3Int dimensions)
     {
         float3[] pos = new float3[length * 4];
         
@@ -267,13 +287,12 @@ public class ChunkMarchingCube : MonoBehaviour
                 }
             }
         }
-        VectorizePos(pos, length, dimensions);
+        VectorizePos(pos, dimensions, trs);
     }
 
-    private void VectorizePos(float3[] pos, int totalLength, Vector3 dimensions)
+    private void VectorizePos(float3[] pos, Vector3 dimensions, float4x4 trs)
     {
         int index = 0;
-        float4x4 trs = transform.worldToLocalMatrix;
         for (int i = 0; i < pos.Length; i += 4)
         {
             float4 x = new float4(pos[i].x / dimensions.x, pos[i + 1].x  / dimensions.x, pos[i + 2].x  / dimensions.x, pos[i + 3].x  / dimensions.x);

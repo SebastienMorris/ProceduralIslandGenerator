@@ -445,7 +445,7 @@ MonoBehaviour:
   centerSize: 1
   noiseGen: {fileID: 480249544}
   fallOffMap: {fileID: 892455561}
-  useFallOffMap: 1
+  useFallOffMap: 0
   fallOffCurve:
     serializedVersion: 2
     m_Curve:
@@ -481,9 +481,9 @@ MonoBehaviour:
     m_RotationOrder: 4
   debug: 1
   marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
-  numPointsPerAxis: 10
+  resolution: 10
   numThreadsPerAxis: 8
-  boundsSize: 1
+  boundsSize: 10
 --- !u!4 &785088675
 Transform:
   m_ObjectHideFlags: 0
