@@ -107,7 +107,7 @@ public class ChunkMarchingCube : MonoBehaviour
 		float coef = numPointsPerChunk / 4f - floor(numPointsPerChunk / 4f);
 		missingPoints = (int)(4 * coef);
 		
-		print("numChunks : " + numPointsPerChunk + "  maxTriangles : " + maxTriangleCount);
+		//print("numChunks : " + numPointsPerChunk + "  maxTriangles : " + maxTriangleCount);
 
         numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
 
@@ -115,7 +115,7 @@ public class ChunkMarchingCube : MonoBehaviour
 		pointsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4);
 		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
 		
-		fallOffMapValues = fallOffMap.GenerateCircularFallOffMap(new Vector3Int(dimensions.x, dimensions.y, dimensions.z), steepness, centerSize);
+		fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), steepness, centerSize);
 
 		// Go through all coords and create a chunk there if one doesn't already exist
 		int i = 0;
@@ -160,15 +160,15 @@ public class ChunkMarchingCube : MonoBehaviour
         GetPositions(chunk.transform.position, new Vector3Int(chunkSize, chunkSize, chunkSize));
         CreateNoise(length);
 		
-        float[,,] chunkFalloff = new float[chunkSize, chunkSize, chunkSize];
+        float[,,] chunkFalloff = new float[chunkSize + 1, chunkSize + 1, chunkSize + 1];
         
-        for (int i = 0; i < chunkSize; i++)
+        for (int i = 0; i < chunkSize + 1; i++)
 		{
-			for (int j = 0; j < chunkSize; j++)
+			for (int j = 0; j < chunkSize + 1; j++)
 			{
-				for (int h = 0; h < chunkSize; h++)
+				for (int h = 0; h < chunkSize + 1; h++)
 				{
-					//chunkFalloff[i, j, h] = fallOffMapValues[i, j, h];
+					chunkFalloff[i, j, h] = fallOffMapValues[i + chunk.coord.x * chunkSize, j + chunk.coord.y * chunkSize, h + chunk.coord.z * chunkSize];
 				}
 			}
 		}
