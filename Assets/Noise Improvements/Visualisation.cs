@@ -94,6 +94,8 @@ public abstract class Visualisation : MonoBehaviour
             
             _positionsBuffer.SetData(_positions.Reinterpret<float3>(3 * 4 * 4));
             _normalsBuffer.SetData(_normals.Reinterpret<float3>(3 * 4 * 4));
+            
+            print(_positions.Length);
 
             bounds = new Bounds(transform.position, float3(2f * cmax(abs(transform.lossyScale)) + displacement));
         }
