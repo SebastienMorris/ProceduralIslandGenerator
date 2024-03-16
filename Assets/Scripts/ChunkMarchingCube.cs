@@ -159,22 +159,22 @@ public class ChunkMarchingCube : MonoBehaviour
         
         GetPositions(chunk.transform.position, new Vector3Int(chunkSize, chunkSize, chunkSize));
         CreateNoise(length);
-		
-        float[,,] chunkFalloff = new float[chunkSize * smooth + 1, chunkSize * smooth + 1, chunkSize * smooth + 1];
-        
-        for (int i = 0; i < chunkSize * smooth + 1; i++)
-		{
-			for (int j = 0; j < chunkSize * smooth + 1; j++)
-			{
-				for (int h = 0; h < chunkSize * smooth + 1; h++)
-				{
-					chunkFalloff[i, j, h] = fallOffMapValues[i + chunk.coord.x * chunkSize * smooth, j + chunk.coord.y * chunkSize * smooth, h + chunk.coord.z * chunkSize * smooth];
-				}
-			}
-		}
         
         if (useFallOffMap)
         {
+	        float[,,] chunkFalloff = new float[chunkSize * smooth + 1, chunkSize * smooth + 1, chunkSize * smooth + 1];
+        
+	        for (int i = 0; i < chunkSize * smooth + 1; i++)
+	        {
+		        for (int j = 0; j < chunkSize * smooth + 1; j++)
+		        {
+			        for (int h = 0; h < chunkSize * smooth + 1; h++)
+			        {
+				        chunkFalloff[i, j, h] = fallOffMapValues[i + chunk.coord.x * chunkSize * smooth, j + chunk.coord.y * chunkSize * smooth, h + chunk.coord.z * chunkSize * smooth];
+			        }
+		        }
+	        }
+	        
 	        ApplyFalloffToNoise(noise4.Reinterpret<float>(4 * 4), chunkFalloff);
         }
         else finalNoise = noise4.Reinterpret<float>(4 * 4).ToArray();
