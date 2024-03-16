@@ -157,7 +157,7 @@ public class ChunkMarchingCube : MonoBehaviour
         noisePositions = new NativeArray<float3x4>(length, Allocator.Persistent);
         noise4 = new NativeArray<float4>(length, Allocator.Persistent);
         
-        GetPositions(chunk.transform.localToWorldMatrix, new Vector3Int(chunkSize, chunkSize, chunkSize));
+        GetPositions(chunk.transform.position, new Vector3Int(chunkSize, chunkSize, chunkSize));
         CreateNoise(length);
 		
         float[,,] chunkFalloff = new float[chunkSize, chunkSize, chunkSize];
@@ -273,7 +273,7 @@ public class ChunkMarchingCube : MonoBehaviour
         }
     }
 
-    private void GetPositions(float4x4 trs, Vector3Int dimensions)
+    private void GetPositions(Vector3 chunkPos, Vector3Int dimensions)
     {
         float3[] pos = new float3[numPointsPerChunk];
         print(pos.Length);
@@ -290,10 +290,10 @@ public class ChunkMarchingCube : MonoBehaviour
                 }
             }
         }
-        VectorizePos(pos, dimensions, trs);
+        VectorizePos(pos, dimensions, chunkPos);
     }
 
-    private void VectorizePos(float3[] pos, Vector3 dimensions, float4x4 trs)
+    private void VectorizePos(float3[] pos, Vector3 dimensions, Vector3 chunkPos)
     {
         int index = 0;
         for (int i = 0; i < pos.Length; i += 4)
@@ -315,7 +315,7 @@ public class ChunkMarchingCube : MonoBehaviour
             float4 z = new float4(pos[i].z, pos1.z, pos2.z, pos3.z);
             
             positions[index] = transpose(new float4x3(x - dimensions.x / 2, y - dimensions.y / 2, z - dimensions.z / 2));
-            noisePositions[index] = transpose(trs.Get3x4().TransformVectors( new float4x3(x / dimensions.x - 0.5f, y / dimensions.y - 0.5f, z / dimensions.z - 0.5f)));
+            noisePositions[index] = transpose(/*trs.Get3x4().TransformVectors*/new float4x3((chunkPos.x + x) / this.dimensions.x, (chunkPos.y + y) / this.dimensions.y, (chunkPos.z + z) / this.dimensions.z));
             index++;
         }
     }
