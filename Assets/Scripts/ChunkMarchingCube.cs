@@ -22,7 +22,7 @@ public class ChunkMarchingCube : MonoBehaviour
     [SerializeField] [Range(0, 1)] private float surfaceLevel = 0f;
     [SerializeField] private Material mat;
 
-    [SerializeField] private Settings noiseSettings;
+    [SerializeField] private Settings noiseSettings = Settings.Default;
     [SerializeField] private SpaceTRS domainTRS;
 
     [SerializeField] private GameObject largeMarchingCubePrefab;
@@ -276,7 +276,6 @@ public class ChunkMarchingCube : MonoBehaviour
     private void GetPositions(Vector3 chunkPos, Vector3Int dimensions)
     {
         float3[] pos = new float3[numPointsPerChunk];
-        print(pos.Length);
         
         int i = 0;
         for (int x = 0; x < dimensions.x + 1; x++)
@@ -298,7 +297,6 @@ public class ChunkMarchingCube : MonoBehaviour
         int index = 0;
         for (int i = 0; i < pos.Length; i += 4)
         {
-	        print(i);
 	        float3 zero = new float3(0f, 0f, 0f);
 
 	        /*float3 pos1 = select(pos[i + 1], zero, i + 1 >= pos.Length);

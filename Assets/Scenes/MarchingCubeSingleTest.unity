@@ -341,7 +341,7 @@ MonoBehaviour:
     seed: 0
     frequency: 2
     octaves: 1
-    lacunarity: 0
+    lacunarity: 2
     persistence: 0.5
   domainTRS:
     translation:
