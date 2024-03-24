@@ -313,7 +313,7 @@ public class ChunkMarchingCube : MonoBehaviour
             float4 z = new float4(pos[i].z, pos1.z, pos2.z, pos3.z) / smooth;
             
             positions[index] = transpose(new float4x3(x - dimensions.x / 2, y - dimensions.y / 2, z - dimensions.z / 2));
-            noisePositions[index] = transpose(/*trs.Get3x4().TransformVectors*/new float4x3((chunkPos.x + x) / this.dimensions.x, (chunkPos.y + y) / this.dimensions.y, (chunkPos.z + z) / this.dimensions.z));
+            noisePositions[index] = transpose(/*trs.Get3x4().TransformVectors*/new float4x3((chunkPos.x + x) / dimensions.x, (chunkPos.y + y) / dimensions.y, (chunkPos.z + z) / dimensions.z));
             index++;
         }
     }

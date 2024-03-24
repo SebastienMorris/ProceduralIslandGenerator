@@ -353,9 +353,9 @@ MonoBehaviour:
       y: 0
       z: 0
     scale:
-      x: 1
-      y: 1
-      z: 1
+      x: 0.2
+      y: 0.2
+      z: 0.2
   largeMarchingCubePrefab: {fileID: 109730463941254062, guid: a74a6f0582b0f564485678813af7beb9, type: 3}
   chunkSize: 10
   steepness: 2
@@ -398,7 +398,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   debug: 1
   marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
-  resolution: 1
+  smooth: 1
   numThreadsPerAxis: 8
 --- !u!4 &785088675
 Transform:
