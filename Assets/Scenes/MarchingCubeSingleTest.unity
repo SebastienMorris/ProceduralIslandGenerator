@@ -398,6 +398,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   debug: 1
   marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
+  noiseComputeShader: {fileID: 7200000, guid: 44f6f346a8374344b818ee72c089ec7e, type: 3}
   smooth: 1
   numThreadsPerAxis: 8
 --- !u!4 &785088675

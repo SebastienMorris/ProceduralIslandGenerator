@@ -1,0 +1,56 @@
+struct SmallHash
+{
+    uint primeA;
+    uint primeB;
+    uint primeC;
+    uint primeD;
+    uint primeE;
+    
+    uint4 accumulator;
+
+    uint4 BytesA() { return accumulator & 255;}
+    uint4 BytesD() { return accumulator >> 24;}
+    
+    float4 Floats01A() { return (float4)BytesA() * (1.0 / 255.0);}
+    float4 Floats01D() { return (float4)BytesD() * (1.0 / 255.0);}
+
+    SmallHash(int4 seed)
+    {
+        primeA = 0b10011110001101110111100110110001u;
+        primeB = 0b10000101111010111100101001110111u;
+        primeC = 0b11000010101100101010111000111101u;
+        primeD = 0b00100111110101001110101100101111u;
+        primeE = 0b00010110010101100110011110110001u;
+        
+        accumulator = (uint4)seed + primeE;
+    }
+
+    static SmallHash Add(SmallHash h, int v)
+    {
+        h.accumulator += v;
+        return h;
+    }
+
+    uint4 ToUInt(SmallHash hash)
+    {
+        uint4 avalanche = hash.accumulator;
+        avalanche ^= avalanche >> 15;
+        avalanche *= primeB;
+        avalanche ^= avalanche >> 13;
+        avalanche *= primeC;
+        avalanche ^= avalanche >> 16;
+        return avalanche;
+    }
+
+    SmallHash Eat(int4 data)
+    {
+        return RotateLeft(accumulator + (uint4)data * primeC, 17) * primeD;
+    }
+
+    uint4 RotateLeft(uint4 data, int steps)
+    {
+        return (data << steps) | (data >> 32 - steps);
+    }
+};
+
+
