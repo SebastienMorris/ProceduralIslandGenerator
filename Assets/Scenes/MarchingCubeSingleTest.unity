@@ -362,7 +362,7 @@ MonoBehaviour:
   centerSize: 10
   noiseGen: {fileID: 480249544}
   fallOffMap: {fileID: 892455561}
-  useFallOffMap: 1
+  useFallOffMap: 0
   fallOffCurve:
     serializedVersion: 2
     m_Curve:

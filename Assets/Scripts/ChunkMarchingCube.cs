@@ -120,8 +120,8 @@ public class ChunkMarchingCube : MonoBehaviour
 		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
 		
 		
-		noisePositionsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4 * 3);
-		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4, ComputeBufferType.Append);
+		noisePositionsBuffer = new ComputeBuffer(numPointsPerChunk / 4 * 4, sizeof(float) * 4 * 3);
+		noiseBuffer = new ComputeBuffer(numPointsPerChunk / 4 * 4, sizeof(float) * 4, ComputeBufferType.Append);
 		
 		fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x * smooth + 1, dimensions.y * smooth + 1, dimensions.z * smooth + 1), steepness, centerSize);
 
@@ -190,7 +190,7 @@ public class ChunkMarchingCube : MonoBehaviour
 	        
 	        ApplyFalloffToNoise(noise4.Reinterpret<float>(4 * 4), chunkFalloff);
         }
-        else finalNoise = noise4.Reinterpret<float>(4 * 4).ToArray();
+        //else finalNoise = noise4.Reinterpret<float>(4 * 4).ToArray();
         finalPositions = positions.Reinterpret<float3>(3 * 4 * 4).ToArray();
         
 
@@ -333,6 +333,8 @@ public class ChunkMarchingCube : MonoBehaviour
 
     private void CreateNoise(int length)
     {
+	    finalNoise = new float[length * 4];
+	    
 	    noisePositionsBuffer.SetData(noisePositions);
 	    
 	    noiseComputeShader.SetBuffer(0, "noiseValues", noiseBuffer);
@@ -346,7 +348,12 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	    noiseComputeShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 	    
-	    noiseBuffer.GetData(noise4.ToArray());
+	    noiseBuffer.GetData(finalNoise, 0, 0, length * 4);
+	    
+	    print(finalNoise[0]);
+	    print(finalNoise[1]);
+	    print(finalNoise[2]);
+	    print(finalNoise[3]);
 	    
         /*for (int i = 0; i < length; i++)
         {

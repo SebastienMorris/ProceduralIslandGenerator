@@ -59,6 +59,7 @@ public readonly struct SmallXXHash
 
 public readonly struct SmallXXHash4
 {
+    private const uint primeA = 0b10011110001101110111100110110001;
     private const uint primeB = 0b10000101111010111100101001110111;
     private const uint primeC = 0b11000010101100101010111000111101;
     private const uint primeD = 0b00100111110101001110101100101111;
