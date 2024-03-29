@@ -334,13 +334,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 095dcc9790590234b8da014426c8e023, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dimensions: {x: 20, y: 20, z: 20}
+  dimensions: {x: 10, y: 10, z: 10}
   surfaceLevel: 0.5
   mat: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
   noiseSettings:
     seed: 0
     frequency: 2
-    octaves: 2
+    octaves: 1
     lacunarity: 2
     persistence: 0.5
   domainTRS:
