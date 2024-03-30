@@ -47,9 +47,8 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	private ComputeBuffer noiseBuffer;
 	private ComputeBuffer noisePositionsBuffer;
-	private ComputeBuffer positionsBuffer;
 
-    [SerializeField, Range(1, 10)] private int smooth = 1;
+   // [SerializeField, Range(1, 10)] private int smooth = 1;
     [SerializeField] private int numThreadsPerAxis = 8;
     int numPointsPerChunk;
 
@@ -94,8 +93,8 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	void InitChunks()
 	{
-        numPointsPerChunk = (smooth * chunkSize + 1) * (smooth * chunkSize + 1) * (smooth * chunkSize + 1);
-		int numVoxelsPerAxis = chunkSize * smooth;
+        numPointsPerChunk = (chunkSize + 1) * (chunkSize + 1) * (chunkSize + 1);
+		int numVoxelsPerAxis = chunkSize;
 		int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
 		int maxTriangleCount = numVoxels * 5;
 		
@@ -108,13 +107,11 @@ public class ChunkMarchingCube : MonoBehaviour
 		
 		
 		noisePositionsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 3);
-		positionsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 3);
-		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4, ComputeBufferType.Append);
+		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float), ComputeBufferType.Append);
 		
-		fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x * smooth + 1, dimensions.y * smooth + 1, dimensions.z * smooth + 1), steepness, centerSize);
+		fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), steepness, centerSize);
 
 		// Go through all coords and create a chunk there if one doesn't already exist
-		int i = 0;
 		for (int x = 0; x < numChunks.x; x++)
 		{
 			for (int y = 0; y < numChunks.y; y++)
@@ -124,7 +121,7 @@ public class ChunkMarchingCube : MonoBehaviour
 					Vector3Int coord = new Vector3Int(x, y, z);
                     var chunk = CreateChunk(coord);
                     chunk.Initialise(mat);
-					UpdateChunk(chunk, i++);
+					UpdateChunk(chunk);
 					chunks.Add(chunk);
 				}
 			}
@@ -132,10 +129,13 @@ public class ChunkMarchingCube : MonoBehaviour
 		
 		pointsBuffer.Release();
 		triangleBuffer.Release();
+		pointsBuffer = null;
+		triangleBuffer = null;
 		
 		noisePositionsBuffer.Release();
-		positionsBuffer.Release();
 		noiseBuffer.Release();
+		noisePositionsBuffer = null;
+		noiseBuffer = null;
 	}
 
 	IslandChunk CreateChunk(Vector3Int coord)
@@ -147,45 +147,45 @@ public class ChunkMarchingCube : MonoBehaviour
 		return chunkScript;
 	}
 
-	private void UpdateChunk(IslandChunk chunk, int index)
+	private void UpdateChunk(IslandChunk chunk)
 	{
         float3[] positions = new float3[numPointsPerChunk];
         float3[] noisePositions = new float3[numPointsPerChunk];
-        float4[] noiseAndPos = new float4[numPointsPerChunk];
+        float[] noiseValues = new float[numPointsPerChunk];
         
         GetPositions(positions, noisePositions, chunk.transform.position, new Vector3Int(chunkSize, chunkSize, chunkSize));
-        CreateNoise(noiseAndPos, noisePositions, positions);
+        CreateNoise(noiseValues, noisePositions);
         
         if (useFallOffMap)
         {
-	        float[,,] chunkFalloff = new float[chunkSize * smooth + 1, chunkSize * smooth + 1, chunkSize * smooth + 1];
+	        float[,,] chunkFalloff = new float[chunkSize + 1, chunkSize + 1, chunkSize + 1];
         
-	        for (int i = 0; i < chunkSize * smooth + 1; i++)
+	        for (int i = 0; i < chunkSize + 1; i++)
 	        {
-		        for (int j = 0; j < chunkSize * smooth + 1; j++)
+		        for (int j = 0; j < chunkSize + 1; j++)
 		        {
-			        for (int h = 0; h < chunkSize * smooth + 1; h++)
+			        for (int h = 0; h < chunkSize + 1; h++)
 			        {
-				        chunkFalloff[i, j, h] = fallOffMapValues[i + chunk.coord.x * chunkSize * smooth, j + chunk.coord.y * chunkSize * smooth, h + chunk.coord.z * chunkSize * smooth];
+				        chunkFalloff[i, j, h] = fallOffMapValues[i + chunk.coord.x * chunkSize, j + chunk.coord.y * chunkSize, h + chunk.coord.z * chunkSize];
 			        }
 		        }
 	        }
 	        
-	        ApplyFalloffToNoise(noiseAndPos, chunkFalloff);
+	       ApplyFalloffToNoise(noiseValues, chunkFalloff);
         }
         
 
-        /* List<float4> posAndNoise = new();
+        List<float4> posAndNoise = new();
         for (int i = 0; i < positions.Length; i++)
         {
-	        posAndNoise.Add(new float4(positions[i], (float)noiseValues[i]));
-        }*/
-		pointsBuffer.SetData(noiseAndPos);
+	        posAndNoise.Add(new float4(positions[i], noiseValues[i]));
+        }
+		pointsBuffer.SetData(posAndNoise);
 
 		triangleBuffer.SetCounterValue(0);
 		marchingCubesShader.SetBuffer(0, "points", pointsBuffer);
 		marchingCubesShader.SetBuffer(0, "triangles", triangleBuffer);
-		marchingCubesShader.SetInt("numPointsPerAxis", chunkSize * smooth + 1);
+		marchingCubesShader.SetInt("numPointsPerAxis", chunkSize + 1);
 		marchingCubesShader.SetFloat("isoLevel", surfaceLevel);
 
 		marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
@@ -219,12 +219,12 @@ public class ChunkMarchingCube : MonoBehaviour
 
 		mesh.RecalculateNormals();
     }
-    private void ApplyFalloffToNoise(float4[] noise, float[,,] falloff)
+    private void ApplyFalloffToNoise(float[] noise, float[,,] falloff)
     {
         int i = 0;
         foreach (float f in falloff)
         {
-            noise[i].w *= abs(f - 1f);
+            noise[i] *= abs(f - 1f);
             i++;
         }
     }
@@ -232,18 +232,23 @@ public class ChunkMarchingCube : MonoBehaviour
     private void GetPositions(float3[] positions, float3[] noisePositions, Vector3 chunkPos, Vector3Int dimensions)
     {
         int i = 0;
-        for (int x = 0; x < dimensions.x * smooth + 1; x++)
+        for (int x = 0; x < dimensions.x + 1; x++)
         {
-            for (int y = 0; y < dimensions.y * smooth + 1; y++)
+            for (int y = 0; y < dimensions.y + 1; y++)
             {
-                for (int z = 0; z < dimensions.z * smooth + 1; z++)
+                for (int z = 0; z < dimensions.z + 1; z++)
                 {
 	                positions[i] = new float3(x - dimensions.x / 2, y - dimensions.y / 2, z - dimensions.z / 2);
-	                noisePositions[i] = new float3((chunkPos.x + x) / dimensions.x, (chunkPos.y + y) / dimensions.y, (chunkPos.z + z) / dimensions.z);
+	                noisePositions[i] = ApplyTRS(new float3((chunkPos.x + x) / dimensions.x, (chunkPos.y + y) / dimensions.y, (chunkPos.z + z) / dimensions.z));
                     i++;
                 }
             }
         }
+    }
+
+    private float3 ApplyTRS(float3 pos)
+    {
+	    return pos * domainTRS.translation + pos * domainTRS.rotation + pos * domainTRS.scale;
     }
 
     /*private void VectorizePos(float3[] pos, Vector3 dimensions, Vector3 chunkPos)
@@ -268,16 +273,14 @@ public class ChunkMarchingCube : MonoBehaviour
         }
     }*/
 
-    private void CreateNoise(float4[] noiseAndPos, float3[] noisePositions, float3[] positions)
+    private void CreateNoise(float[] noise, float3[] noisePositions)
     {
 	    noisePositionsBuffer.SetData(noisePositions);
-	    positionsBuffer.SetData(positions);
 	    
 	    noiseBuffer.SetCounterValue(0);
-	    noiseComputeShader.SetBuffer(0, "noiseAndPos", noiseBuffer);
+	    noiseComputeShader.SetBuffer(0, "noiseValues", noiseBuffer);
 	    noiseComputeShader.SetBuffer(0, "noisePositions", noisePositionsBuffer);
-	    noiseComputeShader.SetBuffer(0, "positions", positionsBuffer);
-	    noiseComputeShader.SetInt("numPointsPerAxis", chunkSize * smooth + 1);
+	    noiseComputeShader.SetInt("numPointsPerAxis", chunkSize + 1);
 	    noiseComputeShader.SetInt("seed", noiseSettings.seed);
 	    noiseComputeShader.SetInt("frequency", noiseSettings.frequency);
 	    noiseComputeShader.SetInt("octaves", noiseSettings.octaves);
@@ -286,13 +289,7 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	    noiseComputeShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 	    
-	    noiseBuffer.GetData(noiseAndPos, 0, 0, numPointsPerChunk);
-
-	    foreach (float4 f in noiseAndPos)
-	    {
-		    print("Pos : " + f.x + " " + f.y + " " + f.z + "  /  " + f.w);
-	    }
-	    
+	    noiseBuffer.GetData(noise, 0, 0, numPointsPerChunk);
         /*for (int i = 0; i < length; i++)
         {
             float4 res = GenerateNoise(noisePositions[i]);
