@@ -1,54 +1,9 @@
 #pragma kernel GenerateNoise
-
-struct SmallHash
-{
-    uint primeA;
-    uint primeB;
-    uint primeC;
-    uint primeD;
-    uint primeE;
-    
-    uint accumulator;
-
-    uint BytesA() { return accumulator & 255;}
-    uint BytesD() { return accumulator >> 24;}
-    
-    float Floats01A() { return (float)BytesA() * (1.0 / 255.0);}
-    float Floats01D() { return (float)BytesD() * (1.0 / 255.0);}
-
-    SmallHash Add(SmallHash h, int v)
-    {
-        h.accumulator += v;
-        return h;
-    }
-
-    uint ToUInt(SmallHash hash)
-    {
-        uint avalanche = hash.accumulator;
-        avalanche ^= avalanche >> 15;
-        avalanche *= primeB;
-        avalanche ^= avalanche >> 13;
-        avalanche *= primeC;
-        avalanche ^= avalanche >> 16;
-        return avalanche;
-    }
-
-    SmallHash Eat(SmallHash h, int data)
-    {
-        h.accumulator = RotateLeft(accumulator + (uint)data * primeC, 17) * primeD;
-        return h;
-    }
-
-    uint RotateLeft(uint data, int steps)
-    {
-        return (data << steps) | (data >> 32 - steps);
-    }
-};
-
+#include "HashCompute.compute"
 
 static const int numThreads = 8;
-RWStructuredBuffer<float> noiseValues;
-RWStructuredBuffer<float3> noisePositions;
+RWStructuredBuffer<float4> posAndNoise;
+//RWStructuredBuffer<float3> noisePositions;
 //RWStructuredBuffer<float3> positions;
 
 
@@ -59,7 +14,10 @@ int octaves;
 int lacunarity;
 float persistence;
 
-int test = 0;
+float scale;
+
+float4 dimensions;
+float4 basePos;
 
 int IndexFromCoord(int x, int y, int z) 
 {
@@ -72,6 +30,17 @@ struct LatticeSpan
     float g0, g1;
     float t;
 };
+
+float3 GetPosition(int3 index)
+{
+    return float3(index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
+}
+
+float3 GetNoisePosition(int3 index)
+{
+    return float3((basePos.x + index.x) / dimensions.x, (basePos.y + index.y) / dimensions.y, (basePos.z + index.z) / dimensions.z) * scale;
+}
+
 
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
@@ -148,17 +117,16 @@ void GenerateNoise(int3 id : SV_DispatchThreadID)
     float amplitude = 1.0;
     float amplitudeSum = 0.0;
     float noiseSum = 0.0;
+
+    float3 noisePos = GetNoisePosition(id);
     
     for(int j=0; j < octaves; j++)
     {
-        noiseSum += GetNoise(noisePositions[i], hash.Add(hash, j), frequency) * amplitude;
+        noiseSum += GetNoise(noisePos, hash.Add(hash, j), frequency) * amplitude;
         amplitudeSum += amplitude;
         freq *= lacunarity;
         amplitude *= persistence;
     }
-
-    //value = numPointsPerAxis;
-
-    float value = noiseSum / amplitudeSum / 2 + 0.5;
-    noiseValues[i] = value;
+    
+    posAndNoise[i] = float4(GetPosition(id), noiseSum / amplitudeSum / 2 + 0.5);
 }

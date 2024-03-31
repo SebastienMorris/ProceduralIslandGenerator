@@ -46,7 +46,7 @@ public class ChunkMarchingCube : MonoBehaviour
 	private ComputeBuffer triCountBuffer;
 
 	private ComputeBuffer noiseBuffer;
-	private ComputeBuffer noisePositionsBuffer;
+	//private ComputeBuffer noisePositionsBuffer;
 
    // [SerializeField, Range(1, 10)] private int smooth = 1;
     [SerializeField] private int numThreadsPerAxis = 8;
@@ -106,8 +106,8 @@ public class ChunkMarchingCube : MonoBehaviour
 		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
 		
 		
-		noisePositionsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 3);
-		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float), ComputeBufferType.Append);
+		//noisePositionsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 3);
+		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4, ComputeBufferType.Append);
 		
 		fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), steepness, centerSize);
 
@@ -132,9 +132,9 @@ public class ChunkMarchingCube : MonoBehaviour
 		pointsBuffer = null;
 		triangleBuffer = null;
 		
-		noisePositionsBuffer.Release();
+		//noisePositionsBuffer.Release();
 		noiseBuffer.Release();
-		noisePositionsBuffer = null;
+		//noisePositionsBuffer = null;
 		noiseBuffer = null;
 	}
 
@@ -149,12 +149,12 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	private void UpdateChunk(IslandChunk chunk)
 	{
-        float3[] positions = new float3[numPointsPerChunk];
-        float3[] noisePositions = new float3[numPointsPerChunk];
-        float[] noiseValues = new float[numPointsPerChunk];
+        //float3[] positions = new float3[numPointsPerChunk];
+        //float3[] noisePositions = new float3[numPointsPerChunk];
+        float4[] posAndNoise = new float4[numPointsPerChunk];
         
-        GetPositions(positions, noisePositions, chunk.transform.position, new Vector3Int(chunkSize, chunkSize, chunkSize));
-        CreateNoise(noiseValues, noisePositions);
+        //GetPositions(positions, noisePositions, chunk.transform.position, new Vector3Int(chunkSize, chunkSize, chunkSize));
+        CreateNoise(posAndNoise, float3(chunkSize, chunkSize, chunkSize), chunk.transform.position);
         
         if (useFallOffMap)
         {
@@ -171,15 +171,15 @@ public class ChunkMarchingCube : MonoBehaviour
 		        }
 	        }
 	        
-	       ApplyFalloffToNoise(noiseValues, chunkFalloff);
+	       ApplyFalloffToNoise(posAndNoise, chunkFalloff);
         }
         
 
-        List<float4> posAndNoise = new();
+        /*List<float4> posAndNoise = new();
         for (int i = 0; i < positions.Length; i++)
         {
 	        posAndNoise.Add(new float4(positions[i], noiseValues[i]));
-        }
+        }*/
 		pointsBuffer.SetData(posAndNoise);
 
 		triangleBuffer.SetCounterValue(0);
@@ -219,17 +219,17 @@ public class ChunkMarchingCube : MonoBehaviour
 
 		mesh.RecalculateNormals();
     }
-    private void ApplyFalloffToNoise(float[] noise, float[,,] falloff)
+    private void ApplyFalloffToNoise(float4[] noise, float[,,] falloff)
     {
         int i = 0;
         foreach (float f in falloff)
         {
-            noise[i] *= abs(f - 1f);
+            noise[i].w *= abs(f - 1f);
             i++;
         }
     }
 
-    private void GetPositions(float3[] positions, float3[] noisePositions, Vector3 chunkPos, Vector3Int dimensions)
+    /*private void GetPositions(float3[] positions, float3[] noisePositions, Vector3 chunkPos, Vector3Int dimensions)
     {
         int i = 0;
         for (int x = 0; x < dimensions.x + 1; x++)
@@ -244,12 +244,12 @@ public class ChunkMarchingCube : MonoBehaviour
                 }
             }
         }
-    }
+    }*/
 
-    private float3 ApplyTRS(float3 pos)
+    /*private float3 ApplyTRS(float3 pos)
     {
 	    return pos * domainTRS.translation + pos * domainTRS.rotation + pos * domainTRS.scale;
-    }
+    }*/
 
     /*private void VectorizePos(float3[] pos, Vector3 dimensions, Vector3 chunkPos)
     {
@@ -273,23 +273,29 @@ public class ChunkMarchingCube : MonoBehaviour
         }
     }*/
 
-    private void CreateNoise(float[] noise, float3[] noisePositions)
+    private void CreateNoise(float4[] posAndNoise, float3 dimensions, float3 chunkPos)
     {
-	    noisePositionsBuffer.SetData(noisePositions);
+	    //noisePositionsBuffer.SetData(noisePositions);
 	    
 	    noiseBuffer.SetCounterValue(0);
-	    noiseComputeShader.SetBuffer(0, "noiseValues", noiseBuffer);
-	    noiseComputeShader.SetBuffer(0, "noisePositions", noisePositionsBuffer);
-	    noiseComputeShader.SetInt("numPointsPerAxis", chunkSize + 1);
-	    noiseComputeShader.SetInt("seed", noiseSettings.seed);
-	    noiseComputeShader.SetInt("frequency", noiseSettings.frequency);
-	    noiseComputeShader.SetInt("octaves", noiseSettings.octaves);
-	    noiseComputeShader.SetInt("lacunarity", noiseSettings.lacunarity);
-	    noiseComputeShader.SetFloat("persistence", noiseSettings.persistence);
+	    noiseComputeShader.SetBuffer(0, Shader.PropertyToID("posAndNoise"), noiseBuffer);
+	    
+	    noiseComputeShader.SetInt(Shader.PropertyToID("numPointsPerAxis"), chunkSize + 1);
+	    
+	    noiseComputeShader.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
+	    noiseComputeShader.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
+	    noiseComputeShader.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
+	    noiseComputeShader.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
+	    noiseComputeShader.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
+	    
+	    noiseComputeShader.SetFloat(Shader.PropertyToID("scale"), domainTRS.scale.x);
+	    
+	    noiseComputeShader.SetVector(Shader.PropertyToID("dimensions"), float4(dimensions, 0f));
+	    noiseComputeShader.SetVector(Shader.PropertyToID("basePos"), float4(chunkPos, 0f));
 
 	    noiseComputeShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 	    
-	    noiseBuffer.GetData(noise, 0, 0, numPointsPerChunk);
+	    noiseBuffer.GetData(posAndNoise, 0, 0, numPointsPerChunk);
         /*for (int i = 0; i < length; i++)
         {
             float4 res = GenerateNoise(noisePositions[i]);
