@@ -16,7 +16,13 @@ float persistence;
 
 float scale;
 
+float steepness;
+float centerSize;
+
+bool applyFallOff;
+
 float4 dimensions;
+float4 globalDimensions;
 float4 basePos;
 
 int IndexFromCoord(int x, int y, int z) 
@@ -31,12 +37,42 @@ struct LatticeSpan
     float t;
 };
 
+float Pow(float value, float powValue)
+{
+    float res = 1;
+    for(int i=0; i<powValue; i++)
+    {
+        res *= value;
+    }
+    return res;
+}
+
+float FallOffEvaluate(float value)
+{
+    return Pow(value, steepness) / (Pow(value, steepness) + Pow(centerSize - centerSize * value, steepness));
+}
+
+float GetFallOffValue(int3 index)
+{
+    if(!applyFallOff)
+        return 0.0;
+        
+    float x = (index.x + basePos.x * 2.0) / globalDimensions.x * 2.0 - 1.0;
+    float y = (index.y + basePos.y * 2.0) / globalDimensions.y * 2.0 - 1.0;
+    float z = (index.z + basePos.z * 2.0) / globalDimensions.z * 2.0 - 1.0;
+    
+    float val1 = max(abs(x), abs(y));
+    float val2 = max(val1, abs(z));
+    
+    return FallOffEvaluate(val2);
+}
+
 float3 GetPosition(int3 index)
 {
     return float3(index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
 }
 
-float3 GetNoisePosition(int3 index)
+float3 GetNoisePosition(int3 index) 
 {
     return float3((basePos.x + index.x) / dimensions.x, (basePos.y + index.y) / dimensions.y, (basePos.z + index.z) / dimensions.z) * scale;
 }
@@ -119,6 +155,7 @@ void GenerateNoise(int3 id : SV_DispatchThreadID)
     float noiseSum = 0.0;
 
     float3 noisePos = GetNoisePosition(id);
+    float3 pos = GetPosition(id);
     
     for(int j=0; j < octaves; j++)
     {
@@ -128,5 +165,5 @@ void GenerateNoise(int3 id : SV_DispatchThreadID)
         amplitude *= persistence;
     }
     
-    posAndNoise[i] = float4(GetPosition(id), noiseSum / amplitudeSum / 2 + 0.5);
+    posAndNoise[i] = float4(pos, /*(noiseSum / amplitudeSum / 2 + 0.5)*/ - GetFallOffValue(pos));
 }

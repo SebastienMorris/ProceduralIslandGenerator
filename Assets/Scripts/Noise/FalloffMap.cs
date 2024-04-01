@@ -33,9 +33,9 @@ public class FalloffMap : MonoBehaviour
             {
                 for (int h = 0; h < size.z; h++)
                 {
-                    float x = (i / (float)size.x) * 2 - 1;
-                    float y = (j / (float)size.y) * 2 - 1;
-                    float z = (h / (float)size.z) * 2 - 1;
+                    float x = (i / (float)size.x) * 2f - 1f;
+                    float y = (j / (float)size.y) * 2f - 1f;  
+                    float z = (h / (float)size.z) * 2f - 1f;
 
                     float value = Mathf.Max(Mathf.Abs(x), Mathf.Abs(y), Mathf.Abs(z));
                     map[i, j, h] = Evaluate(value, steepness, centerSize);
