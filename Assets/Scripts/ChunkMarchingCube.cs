@@ -48,7 +48,6 @@ public class ChunkMarchingCube : MonoBehaviour
 	private ComputeBuffer noiseBuffer;
 	//private ComputeBuffer noisePositionsBuffer;
 
-   // [SerializeField, Range(1, 10)] private int smooth = 1;
     [SerializeField] private int numThreadsPerAxis = 8;
     int numPointsPerChunk;
 
@@ -85,19 +84,14 @@ public class ChunkMarchingCube : MonoBehaviour
 		int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
 		int maxTriangleCount = numVoxels * 5;
 		
-
         numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
 
 		triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
 		pointsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4);
 		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
 		
-		
-		//noisePositionsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 3);
 		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4, ComputeBufferType.Append);
 		
-		//fallOffMapValues = fallOffMap.GenerateFallOffMap(new Vector3Int(dimensions.x + 1, dimensions.y + 1, dimensions.z + 1), steepness, centerSize);
-
 		// Go through all coords and create a chunk there if one doesn't already exist
 		for (int x = 0; x < numChunks.x; x++)
 		{
@@ -138,31 +132,13 @@ public class ChunkMarchingCube : MonoBehaviour
         
         CreateNoise(posAndNoise, float3(chunkSize, chunkSize, chunkSize), chunk.transform.position);
         
-        /*if (useFallOffMap)
-        {
-	        float[,,] chunkFalloff = new float[chunkSize + 1, chunkSize + 1, chunkSize + 1];
-        
-	        for (int i = 0; i < chunkSize + 1; i++)
-	        {
-		        for (int j = 0; j < chunkSize + 1; j++)
-		        {
-			        for (int h = 0; h < chunkSize + 1; h++)
-			        {
-				        chunkFalloff[i, j, h] = fallOffMapValues[i + chunk.coord.x * chunkSize, j + chunk.coord.y * chunkSize, h + chunk.coord.z * chunkSize];
-			        }
-		        }
-	        }
-	        
-	       ApplyFalloffToNoise(posAndNoise, chunkFalloff);
-        }*/
-        
 		pointsBuffer.SetData(posAndNoise);
 
 		triangleBuffer.SetCounterValue(0);
-		marchingCubesShader.SetBuffer(0, "points", pointsBuffer);
-		marchingCubesShader.SetBuffer(0, "triangles", triangleBuffer);
-		marchingCubesShader.SetInt("numPointsPerAxis", chunkSize + 1);
-		marchingCubesShader.SetFloat("isoLevel", surfaceLevel);
+		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("points"), pointsBuffer);
+		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
+		marchingCubesShader.SetInt(Shader.PropertyToID("numPointsPerAxis"), chunkSize + 1);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
 
 		marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 
@@ -195,60 +171,7 @@ public class ChunkMarchingCube : MonoBehaviour
 
 		mesh.RecalculateNormals();
     }
-    private void ApplyFalloffToNoise(float4[] noise, float[,,] falloff)
-    {
-        int i = 0;
-        foreach (float f in falloff)
-        {
-            noise[i].w *= abs(f - 1f);
-            i++;
-        }
-    }
-
-    /*private void GetPositions(float3[] positions, float3[] noisePositions, Vector3 chunkPos, Vector3Int dimensions)
-    {
-        int i = 0;
-        for (int x = 0; x < dimensions.x + 1; x++)
-        {
-            for (int y = 0; y < dimensions.y + 1; y++)
-            {
-                for (int z = 0; z < dimensions.z + 1; z++)
-                {
-	                positions[i] = new float3(x - dimensions.x / 2, y - dimensions.y / 2, z - dimensions.z / 2);
-	                noisePositions[i] = ApplyTRS(new float3((chunkPos.x + x) / dimensions.x, (chunkPos.y + y) / dimensions.y, (chunkPos.z + z) / dimensions.z));
-                    i++;
-                }
-            }
-        }
-    }*/
-
-    /*private float3 ApplyTRS(float3 pos)
-    {
-	    return pos * domainTRS.translation + pos * domainTRS.rotation + pos * domainTRS.scale;
-    }*/
-
-    /*private void VectorizePos(float3[] pos, Vector3 dimensions, Vector3 chunkPos)
-    {
-        int index = 0;
-        for (int i = 0; i < pos.Length; i += 4)
-        {
-	        float3 zero = new float3(0f, 0f, 0f);
-	        
-	        float3 pos1 = i + 1 >= pos.Length ? zero : pos[i + 1];
-	        float3 pos2 = i + 2 >= pos.Length ? zero : pos[i + 2];
-	        float3 pos3 = i + 3 >= pos.Length ? zero : pos[i + 3];
-	        
-	        
-            float4 x = new float4(pos[i].x, pos1.x, pos2.x, pos3.x) / smooth;
-            float4 y = new float4(pos[i].y, pos1.y, pos2.y, pos3.y) / smooth;
-            float4 z = new float4(pos[i].z, pos1.z, pos2.z, pos3.z) / smooth;
-            
-            positions[index] = transpose(new float4x3(x - dimensions.x / 2, y - dimensions.y / 2, z - dimensions.z / 2));
-            noisePositions[index] = domainTRS.Matrix.TransformVectors(new float4x3((chunkPos.x + x) / dimensions.x, (chunkPos.y + y) / dimensions.y, (chunkPos.z + z) / dimensions.z));
-            index++;
-        }
-    }*/
-
+	
     private void CreateNoise(float4[] posAndNoise, float3 dimensions, float3 chunkPos)
     {
 	    
@@ -277,26 +200,6 @@ public class ChunkMarchingCube : MonoBehaviour
 	    
 	    noiseBuffer.GetData(posAndNoise, 0, 0, numPointsPerChunk);
     }
-
-	/*private float4 GenerateNoise(float3x4 positions)
-    {
-        float4x3 position = domainTRS.Matrix.TransformVectors(transpose(positions));
-        var hash = SmallXXHash4.Seed(noiseSettings.seed);
-        int frequency = noiseSettings.frequency;
-        float amplitude = 1f;
-        float amplitudeSum = 0f;
-        float4 sum = 0f;
-        
-        for (int j = 0; j < noiseSettings.octaves; j++)
-        {
-            sum += default(Lattice3D<Perlin, LatticeNormal>).GetNoise4(position, hash + j, frequency) * amplitude;
-            amplitudeSum += amplitude;
-            frequency *= noiseSettings.lacunarity;
-            amplitude *= noiseSettings.persistence;
-        }
-
-        return (sum / amplitudeSum) / 2 + 0.5f;
-    }*/
 
     private void ClearChunks()
     {
