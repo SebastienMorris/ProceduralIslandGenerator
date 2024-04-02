@@ -3,8 +3,6 @@
 
 static const int numThreads = 8;
 RWStructuredBuffer<float4> posAndNoise;
-//RWStructuredBuffer<float3> noisePositions;
-//RWStructuredBuffer<float3> positions;
 
 
 int numPointsPerAxis;
@@ -18,12 +16,12 @@ float scale;
 
 float steepness;
 float centerSize;
-
 bool applyFallOff;
 
 float4 dimensions;
 float4 globalDimensions;
-float4 basePos;
+float4 localPos;
+float4 globalPos;
 
 int IndexFromCoord(int x, int y, int z) 
 {
@@ -47,9 +45,9 @@ float GetFallOffValue(float3 pos)
     if(!applyFallOff)
         return 0.0;
         
-    float x = (pos.x + basePos.x) / globalDimensions.x * 2.0;
-    float y = (pos.y + basePos.y) / globalDimensions.y * 2.0;
-    float z = (pos.z + basePos.z) / globalDimensions.z * 2.0;
+    float x = (pos.x + localPos.x) / globalDimensions.x * 2.0;
+    float y = (pos.y + localPos.y) / globalDimensions.y * 2.0;
+    float z = (pos.z + localPos.z) / globalDimensions.z * 2.0;
     
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));
@@ -64,10 +62,8 @@ float3 GetPosition(int3 index)
 
 float3 GetNoisePosition(int3 index) 
 {
-    return float3((basePos.x + index.x) / dimensions.x, (basePos.y + index.y) / dimensions.y, (basePos.z + index.z) / dimensions.z) * scale;
+    return float3((globalPos.x + index.x) / dimensions.x, (globalPos.y + index.y) / dimensions.y, (globalPos.z + index.z) / dimensions.z) * scale;
 }
-
-
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
 {

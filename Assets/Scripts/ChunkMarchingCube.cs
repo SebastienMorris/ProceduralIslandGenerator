@@ -120,7 +120,8 @@ public class ChunkMarchingCube : MonoBehaviour
 	IslandChunk CreateChunk(Vector3Int coord)
 	{
 		GameObject obj = new GameObject($"Chunk ({coord.x}, {coord.y}, {coord.z})");
-		obj.transform.position = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
+		obj.transform.parent = transform;
+		obj.transform.localPosition = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
 		IslandChunk chunkScript = obj.AddComponent<IslandChunk>();
 		chunkScript.coord = coord;
 		return chunkScript;
@@ -130,7 +131,7 @@ public class ChunkMarchingCube : MonoBehaviour
 	{
         float4[] posAndNoise = new float4[numPointsPerChunk];
         
-        CreateNoise(posAndNoise, float3(chunkSize, chunkSize, chunkSize), chunk.transform.position);
+        CreateNoise(posAndNoise, float3(chunkSize, chunkSize, chunkSize), chunk);
         
 		pointsBuffer.SetData(posAndNoise);
 
@@ -172,7 +173,7 @@ public class ChunkMarchingCube : MonoBehaviour
 		mesh.RecalculateNormals();
     }
 	
-    private void CreateNoise(float4[] posAndNoise, float3 dimensions, float3 chunkPos)
+    private void CreateNoise(float4[] posAndNoise, float3 dimensions, IslandChunk chunk)
     {
 	    
 	    noiseBuffer.SetCounterValue(0);
@@ -194,7 +195,8 @@ public class ChunkMarchingCube : MonoBehaviour
 	    
 	    noiseComputeShader.SetVector(Shader.PropertyToID("dimensions"), float4(dimensions, 0f));
 	    noiseComputeShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
-	    noiseComputeShader.SetVector(Shader.PropertyToID("basePos"), float4(chunkPos, 0f));
+	    noiseComputeShader.SetVector(Shader.PropertyToID("localPos"), float4(chunk.transform.localPosition, 0f));
+	    noiseComputeShader.SetVector(Shader.PropertyToID("globalPos"), float4(chunk.transform.position, 0f));
 	    
 	    noiseComputeShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 	    
@@ -203,7 +205,9 @@ public class ChunkMarchingCube : MonoBehaviour
 
     private void ClearChunks()
     {
-        foreach(var chunk in chunks) Destroy(chunk.gameObject);
+        foreach(var chunk in chunks) 
+	        Destroy(chunk.gameObject);
+        
         chunks.Clear();
     }
 
