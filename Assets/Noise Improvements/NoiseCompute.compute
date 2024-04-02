@@ -24,6 +24,7 @@ bool applyFallOff;
 float4 dimensions;
 float4 globalDimensions;
 float4 basePos;
+float4 numChunksPerAxis;
 
 int IndexFromCoord(int x, int y, int z) 
 {
@@ -37,34 +38,24 @@ struct LatticeSpan
     float t;
 };
 
-float Pow(float value, float powValue)
-{
-    float res = 1;
-    for(int i=0; i<powValue; i++)
-    {
-        res *= value;
-    }
-    return res;
-}
-
 float FallOffEvaluate(float value)
 {
-    return Pow(value, steepness) / (Pow(value, steepness) + Pow(centerSize - centerSize * value, steepness));
+    return pow(abs(value), steepness) / (pow(abs(value), steepness) + pow(abs(centerSize - centerSize * value), steepness));
 }
 
-float GetFallOffValue(int3 index)
+float GetFallOffValue(float3 pos)
 {
     if(!applyFallOff)
         return 0.0;
         
-    float x = (index.x + basePos.x * 2.0) / globalDimensions.x * 2.0 - 1.0;
-    float y = (index.y + basePos.y * 2.0) / globalDimensions.y * 2.0 - 1.0;
-    float z = (index.z + basePos.z * 2.0) / globalDimensions.z * 2.0 - 1.0;
+    float x = (pos.x + basePos.x) / globalDimensions.x * numChunksPerAxis.x;
+    float y = (pos.y + basePos.y) / globalDimensions.y * numChunksPerAxis.y;
+    float z = (pos.z + basePos.z) / globalDimensions.z * numChunksPerAxis.z;
     
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));
     
-    return FallOffEvaluate(val2);
+    return val2;
 }
 
 float3 GetPosition(int3 index)
@@ -165,5 +156,5 @@ void GenerateNoise(int3 id : SV_DispatchThreadID)
         amplitude *= persistence;
     }
     
-    posAndNoise[i] = float4(pos, /*(noiseSum / amplitudeSum / 2 + 0.5)*/ - GetFallOffValue(pos));
+    posAndNoise[i] = float4(pos, /*(noiseSum / amplitudeSum / 2 + 0.5) - */GetFallOffValue(pos));
 }
