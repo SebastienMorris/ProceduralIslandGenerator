@@ -272,16 +272,10 @@ public class ChunkMarchingCube : MonoBehaviour
 	    noiseComputeShader.SetVector(Shader.PropertyToID("dimensions"), float4(dimensions, 0f));
 	    noiseComputeShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
 	    noiseComputeShader.SetVector(Shader.PropertyToID("basePos"), float4(chunkPos, 0f));
-	    noiseComputeShader.SetVector(Shader.PropertyToID("numChunksPerAxis"), float4(numChunks.x, numChunks.y, numChunks.z, 0f));
-
+	    
 	    noiseComputeShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 	    
 	    noiseBuffer.GetData(posAndNoise, 0, 0, numPointsPerChunk);
-
-	    foreach (float4 f in posAndNoise)
-	    {
-		    print(f.w);
-	    }
     }
 
 	/*private float4 GenerateNoise(float3x4 positions)

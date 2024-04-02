@@ -24,7 +24,6 @@ bool applyFallOff;
 float4 dimensions;
 float4 globalDimensions;
 float4 basePos;
-float4 numChunksPerAxis;
 
 int IndexFromCoord(int x, int y, int z) 
 {
@@ -48,14 +47,14 @@ float GetFallOffValue(float3 pos)
     if(!applyFallOff)
         return 0.0;
         
-    float x = (pos.x + basePos.x) / globalDimensions.x * numChunksPerAxis.x;
-    float y = (pos.y + basePos.y) / globalDimensions.y * numChunksPerAxis.y;
-    float z = (pos.z + basePos.z) / globalDimensions.z * numChunksPerAxis.z;
+    float x = (pos.x + basePos.x) / globalDimensions.x * 2.0;
+    float y = (pos.y + basePos.y) / globalDimensions.y * 2.0;
+    float z = (pos.z + basePos.z) / globalDimensions.z * 2.0;
     
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));
     
-    return val2;
+    return FallOffEvaluate(val2);
 }
 
 float3 GetPosition(int3 index)
@@ -156,5 +155,5 @@ void GenerateNoise(int3 id : SV_DispatchThreadID)
         amplitude *= persistence;
     }
     
-    posAndNoise[i] = float4(pos, /*(noiseSum / amplitudeSum / 2 + 0.5) - */GetFallOffValue(pos));
+    posAndNoise[i] = float4(pos, (noiseSum / amplitudeSum / 2 + 0.5) - GetFallOffValue(pos));
 }
