@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 using static Unity.Mathematics.math;
 using float4x3 = Unity.Mathematics.float4x3;
 using static Noise;
@@ -49,7 +50,7 @@ public class NoiseVisualisation : Visualisation
         }
     };
     
-    [SerializeField] private Settings noiseSettings = Settings.Default;
+    [FormerlySerializedAs("noiseSettings")] [SerializeField] private NoiseSettings noiseNoiseSettings = NoiseSettings.Default;
 
     public enum NoiseType
     {
@@ -88,7 +89,7 @@ public class NoiseVisualisation : Visualisation
 
     protected override void UpdateVisualisation(NativeArray<float3x4> positions, int resolution, JobHandle handle)
     {
-        noiseJobs[(int)type, 2 * dimensions - (tiling ? 1 : 2)](positions, _noise, noiseSettings, domain, resolution, handle).Complete();
+        noiseJobs[(int)type, 2 * dimensions - (tiling ? 1 : 2)](positions, _noise, noiseNoiseSettings, domain, resolution, handle).Complete();
         _noiseBuffer.SetData(_noise.Reinterpret<float>(4 * 4));
     }
 }
