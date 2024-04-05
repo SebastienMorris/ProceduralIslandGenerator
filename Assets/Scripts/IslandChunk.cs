@@ -52,9 +52,4 @@ public class IslandChunk : MonoBehaviour
 
 		meshRenderer.material = mat;
 	}
-
-	public void Delete()
-	{
-		Destroy(gameObject);
-	}
 }
