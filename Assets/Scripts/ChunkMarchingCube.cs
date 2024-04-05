@@ -17,46 +17,34 @@ using float4 = Unity.Mathematics.float4;
 
 public class ChunkMarchingCube : MonoBehaviour
 {
-
-
+	[SerializeField] private bool debug;
+	
+	[SerializeField] private ComputeShader marchingCubesShader;
+	[SerializeField] private ComputeShader noiseShader;
+	
+	[SerializeField] private Material meshMaterial;
+	
+	[SerializeField] private int numThreadsPerAxis = 8;
+	
 	[SerializeField] private Vector3Int dimensions = new (0, 0, 0);
-    [SerializeField] [Range(0, 1)] private float surfaceLevel = 0f;
-    [SerializeField] private Material mat;
+	[SerializeField] private int chunkSize = 10;
+    [SerializeField] [Range(0, 1)] private float surfaceLevel = 0.5f;
 
-    [SerializeField] private Settings noiseSettings = Settings.Default;
-    [SerializeField] private SpaceTRS domainTRS;
+    [SerializeField] private NoiseSettings noiseSettings = NoiseSettings.Default;
 
-    [SerializeField] private GameObject largeMarchingCubePrefab;
-    [SerializeField] private int chunkSize = 10;
-
-    [SerializeField][Range(0.1f, 10)] private float steepness = 3;
-    [SerializeField][Range(0.1f, 10)] private float centerSize = 2.2f;
-
-    [SerializeField] private CustomNoiseGen noiseGen;
-    [SerializeField] private FalloffMap fallOffMap;
-
-    [SerializeField] private bool useFallOffMap = false;
-    [SerializeField] private AnimationCurve fallOffCurve;
-
-    [SerializeField] private bool debug;
-    [SerializeField] private ComputeShader marchingCubesShader;
-    [SerializeField] private ComputeShader noiseComputeShader;
+    [SerializeField] private bool applyFallOffMap;
+    [SerializeField][Range(0.1f, 10)] private float steepness = 2f;
+    [SerializeField][Range(0.1f, 10)] private float centerSize = 10f;
+    
+    
 	private ComputeBuffer pointsBuffer;
 	private ComputeBuffer triangleBuffer;
 	private ComputeBuffer triCountBuffer;
-
 	private ComputeBuffer noiseBuffer;
-	//private ComputeBuffer noisePositionsBuffer;
 
-    [SerializeField] private int numThreadsPerAxis = 8;
-    int numPointsPerChunk;
-
+    private int numPointsPerChunk;
 
 	private List<IslandChunk> chunks = new List<IslandChunk>();
-
-    private float[,,] fallOffMapValues;
-
-	private Vector3Int numChunks = Vector3Int.one;
 
 	private void Update()
     {
@@ -64,7 +52,6 @@ public class ChunkMarchingCube : MonoBehaviour
 	    {
 		    ClearChunks();
 		    InitChunks();
-		    //CreateChunks();
 	    }
     }
 
@@ -84,7 +71,7 @@ public class ChunkMarchingCube : MonoBehaviour
 		int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
 		int maxTriangleCount = numVoxels * 5;
 		
-        numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
+        Vector3Int numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
 
 		triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
 		pointsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4);
@@ -101,7 +88,7 @@ public class ChunkMarchingCube : MonoBehaviour
 				{
 					Vector3Int coord = new Vector3Int(x, y, z);
                     var chunk = CreateChunk(coord);
-                    chunk.Initialise(mat);
+                    chunk.Initialise(meshMaterial);
 					UpdateChunk(chunk);
 					chunks.Add(chunk);
 				}
@@ -177,28 +164,28 @@ public class ChunkMarchingCube : MonoBehaviour
     {
 	    
 	    noiseBuffer.SetCounterValue(0);
-	    noiseComputeShader.SetBuffer(0, Shader.PropertyToID("posAndNoise"), noiseBuffer);
+	    noiseShader.SetBuffer(0, Shader.PropertyToID("posAndNoise"), noiseBuffer);
 	    
-	    noiseComputeShader.SetInt(Shader.PropertyToID("numPointsPerAxis"), chunkSize + 1);
+	    noiseShader.SetInt(Shader.PropertyToID("numPointsPerAxis"), chunkSize + 1);
 	    
-	    noiseComputeShader.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
-	    noiseComputeShader.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
-	    noiseComputeShader.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
-	    noiseComputeShader.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
-	    noiseComputeShader.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
+	    noiseShader.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
+	    noiseShader.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
+	    noiseShader.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
+	    noiseShader.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
+	    noiseShader.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
 	    
-	    noiseComputeShader.SetFloat(Shader.PropertyToID("scale"), domainTRS.scale.x);
+	    noiseShader.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale);
 	    
-	    noiseComputeShader.SetFloat(Shader.PropertyToID("steepness"), steepness);
-	    noiseComputeShader.SetFloat(Shader.PropertyToID("centerSize"), centerSize);
-	    noiseComputeShader.SetBool(Shader.PropertyToID("applyFallOff"), useFallOffMap);
+	    noiseShader.SetFloat(Shader.PropertyToID("steepness"), steepness);
+	    noiseShader.SetFloat(Shader.PropertyToID("centerSize"), centerSize);
+	    noiseShader.SetBool(Shader.PropertyToID("applyFallOff"), applyFallOffMap);
 	    
-	    noiseComputeShader.SetVector(Shader.PropertyToID("dimensions"), float4(dimensions, 0f));
-	    noiseComputeShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
-	    noiseComputeShader.SetVector(Shader.PropertyToID("localPos"), float4(chunk.transform.localPosition, 0f));
-	    noiseComputeShader.SetVector(Shader.PropertyToID("globalPos"), float4(chunk.transform.position, 0f));
+	    noiseShader.SetVector(Shader.PropertyToID("dimensions"), float4(dimensions, 0f));
+	    noiseShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
+	    noiseShader.SetVector(Shader.PropertyToID("localPos"), float4(chunk.transform.localPosition, 0f));
+	    noiseShader.SetVector(Shader.PropertyToID("globalPos"), float4(chunk.transform.position, 0f));
 	    
-	    noiseComputeShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
+	    noiseShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 	    
 	    noiseBuffer.GetData(posAndNoise, 0, 0, numPointsPerChunk);
     }
@@ -234,4 +221,21 @@ public class ChunkMarchingCube : MonoBehaviour
 			}
 		}
 	}
+}
+
+	
+[Serializable]
+public struct NoiseSettings
+{
+	public int seed;
+	[Min(1)] public int frequency;
+	[Range(1, 6)] public int octaves;
+
+	[Range(2, 4)] public int lacunarity;
+
+	[Range(0f, 1f)] public float persistence;
+
+	[Range(0.1f, 2f)] public float scale;
+
+	public static NoiseSettings Default => new NoiseSettings{frequency = 4, octaves = 1, lacunarity = 2, persistence = 0.5f, scale = 1f};
 }
