@@ -46,6 +46,8 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	private List<IslandChunk> chunks = new List<IslandChunk>();
 
+	private Action onMeshGenerated;
+
 	private void Update()
     {
 	    if (Input.GetKeyUp(KeyCode.G))
@@ -64,6 +66,40 @@ public class ChunkMarchingCube : MonoBehaviour
         }
     }
 
+    private IEnumerator GenerateMeshCoroutine(Vector3Int numChunks)
+    {
+	    for (int x = 0; x < numChunks.x; x++)
+	    {
+		    for (int y = 0; y < numChunks.y; y++)
+		    {
+			    for (int z = 0; z < numChunks.z; z++)
+			    {
+				    Vector3Int coord = new Vector3Int(x, y, z);
+				    var chunk = CreateChunk(coord);
+				    chunk.Initialise(meshMaterial);
+				    UpdateChunk(chunk);
+				    chunks.Add(chunk);
+				    yield return new WaitForEndOfFrame();
+			    }
+		    }
+	    }
+	    onMeshGenerated.Invoke();
+	    
+    }
+
+    private void OnEndMeshGeneration()
+    {
+	    pointsBuffer.Release();
+	    triangleBuffer.Release();
+	    pointsBuffer = null;
+	    triangleBuffer = null;
+		
+	    noiseBuffer.Release();
+	    noiseBuffer = null;
+
+	    onMeshGenerated -= OnEndMeshGeneration;
+    }
+
 	void InitChunks()
 	{
         numPointsPerChunk = (chunkSize + 1) * (chunkSize + 1) * (chunkSize + 1);
@@ -78,9 +114,11 @@ public class ChunkMarchingCube : MonoBehaviour
 		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
 		
 		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4, ComputeBufferType.Append);
-		
-		// Go through all coords and create a chunk there if one doesn't already exist
-		for (int x = 0; x < numChunks.x; x++)
+
+		onMeshGenerated += OnEndMeshGeneration;
+
+		StartCoroutine(GenerateMeshCoroutine(numChunks));
+		/*for (int x = 0; x < numChunks.x; x++)
 		{
 			for (int y = 0; y < numChunks.y; y++)
 			{
@@ -93,15 +131,7 @@ public class ChunkMarchingCube : MonoBehaviour
 					chunks.Add(chunk);
 				}
 			}
-		}
-		
-		pointsBuffer.Release();
-		triangleBuffer.Release();
-		pointsBuffer = null;
-		triangleBuffer = null;
-		
-		noiseBuffer.Release();
-		noiseBuffer = null;
+		}*/
 	}
 
 	IslandChunk CreateChunk(Vector3Int coord)
