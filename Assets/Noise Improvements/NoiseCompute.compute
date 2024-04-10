@@ -57,7 +57,7 @@ float GetFallOffValue(float3 pos)
 
 float3 GetPosition(int3 index)
 {
-    return float3(index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
+    return float3(index.x - dimensions.x / 2 + localPos.x, index.y - dimensions.y / 2 + localPos.y, index.z - dimensions.z / 2 + localPos.z);
 }
 
 float3 GetNoisePosition(int3 index) 
