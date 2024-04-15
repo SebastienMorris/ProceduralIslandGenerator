@@ -203,7 +203,6 @@ public class ChunkMarchingCube : MonoBehaviour
 	    marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
 	    marchingCubesShader.SetInt(Shader.PropertyToID("numPointsPerAxis"), chunkSize + 1);
 	    marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
-	   // marchingCubesShader.SetVector(Shader.PropertyToID("basePos"), new float4());
 
 	    marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
 
@@ -232,14 +231,6 @@ public class ChunkMarchingCube : MonoBehaviour
 		    // then you recall the function recursively only when it ends.
 		    CreateMesh(request.GetData<Triangle>().ToArray());
 	    }
-    }
-
-    private Vector3Int GetChunkCoordFromPos(float3 position)
-    {
-	    int3 chunkPos = (int3)position + chunkSize / 2;
-	    return new Vector3Int(chunkPos.x + (dimensions.x / 2 - chunkSize / 2) / chunkSize,
-		    chunkPos.y + (dimensions.y / 2 - chunkSize / 2) / chunkSize,
-		    chunkPos.z + (dimensions.z / 2 - chunkSize / 2) / chunkSize);
     }
 
     private void ClearChunks()
