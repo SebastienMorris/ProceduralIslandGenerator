@@ -16,8 +16,6 @@ RWStructuredBuffer<float4> points;
 int numPointsPerAxis;
 float isoLevel;
 
-float4 basePos;
-
 float3 interpolateVerts(float4 v1, float4 v2)
 {
     float t = (isoLevel - v1.w) / (v2.w - v1.w);
@@ -80,9 +78,9 @@ void March (int3 id : SV_DispatchThreadID)
         int b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
 
         Triangle tri;
-        tri.vertexA = interpolateVerts(cubeCorners[a0] - basePos, cubeCorners[b0] - basePos);
-        tri.vertexB = interpolateVerts(cubeCorners[a1] - basePos, cubeCorners[b1] - basePos);
-        tri.vertexC = interpolateVerts(cubeCorners[a2] - basePos, cubeCorners[b2] - basePos);
+        tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
+        tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
+        tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
         triangles.Append(tri);
     }
 }
