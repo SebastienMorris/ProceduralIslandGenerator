@@ -4,10 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Profiling;
+using UnityEngine.Rendering;
 using UnityEngine.Serialization;
 using static Unity.Mathematics.math;
 using static Noise;
@@ -20,10 +23,10 @@ public class ChunkMarchingCube : MonoBehaviour
 	[SerializeField] private bool debug;
 	
 	[SerializeField] private ComputeShader marchingCubesShader;
-	[SerializeField] private ComputeShader noiseShader;
 	
 	[SerializeField] private Material meshMaterial;
-	
+
+	[SerializeField, Min(1)] private int numChunksSpawnedPerFrame = 1;
 	[SerializeField] private int numThreadsPerAxis = 8;
 	
 	[SerializeField] private Vector3Int dimensions = new (0, 0, 0);
@@ -37,21 +40,63 @@ public class ChunkMarchingCube : MonoBehaviour
     [SerializeField][Range(0.1f, 10)] private float centerSize = 10f;
     
     
-	private ComputeBuffer pointsBuffer;
 	private ComputeBuffer triangleBuffer;
 	private ComputeBuffer triCountBuffer;
-	private ComputeBuffer noiseBuffer;
 
+	private Vector3Int numChunks;
+	private int nbChunks;
+	
+	
     private int numPointsPerChunk;
 
 	private List<IslandChunk> chunks = new List<IslandChunk>();
 
+	private bool calculateTriangles;
+	
 	private void Update()
     {
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
 		    ClearChunks();
 		    InitChunks();
+	    }
+
+	    if (calculateTriangles)
+	    {
+		    print("before");
+		    int numVoxels = dimensions.x * dimensions.y * dimensions.z;
+		    int maxTriangleCount = numVoxels * 5;
+		    triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3 + sizeof(int), ComputeBufferType.Append);
+
+		    triangleBuffer.SetCounterValue(0);
+		
+		    marchingCubesShader.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
+		    marchingCubesShader.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
+		    marchingCubesShader.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
+		    marchingCubesShader.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
+		    marchingCubesShader.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
+	    
+		    marchingCubesShader.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale);
+	    
+		    marchingCubesShader.SetFloat(Shader.PropertyToID("steepness"), steepness);
+		    marchingCubesShader.SetFloat(Shader.PropertyToID("centerSize"), centerSize);
+		    marchingCubesShader.SetBool(Shader.PropertyToID("applyFallOff"), applyFallOffMap);
+		
+		    marchingCubesShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
+		    marchingCubesShader.SetVector(Shader.PropertyToID("globalPos"), float4(transform.position, 0f));
+		
+		    marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
+		
+		    marchingCubesShader.SetInt(Shader.PropertyToID("numPointsPerChunk"), numPointsPerChunk);
+		    marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
+		
+		    marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
+		    AsyncGPUReadback.Request(triangleBuffer, OnCompleteMarchingCubesReadback);
+		
+		    triangleBuffer.Release();
+		    triangleBuffer = null;
+
+		    calculateTriangles = false;
 	    }
     }
 
@@ -64,83 +109,151 @@ public class ChunkMarchingCube : MonoBehaviour
         }
     }
 
-	void InitChunks()
-	{
-        numPointsPerChunk = (chunkSize + 1) * (chunkSize + 1) * (chunkSize + 1);
-		int numVoxelsPerAxis = chunkSize;
-		int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
-		int maxTriangleCount = numVoxels * 5;
-		
-        Vector3Int numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
+    void InitChunks()
+    {
+	    numPointsPerChunk = (chunkSize + 1) * (chunkSize + 1) * (chunkSize + 1);
+	    //int numVoxels = dimensions.x * dimensions.y * dimensions.z;
+	    //int maxTriangleCount = numVoxels * 5;
 
-		triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
-		pointsBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4);
-		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
+	    numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
+	    nbChunks = numChunks.x * numChunks.y * numChunks.z;
+
+
+	    RequestMarchingCubes();
+	    /*triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3 + sizeof(int), ComputeBufferType.Append);
+	    //triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
+
+	    Triangle[] islandTriangles = CalculateTriangles();
+
+	    int chunkIndex = 0;
+	    for (int x = 0; x < numChunks.x; x++)
+	    {
+		    for (int y = 0; y < numChunks.y; y++)
+		    {
+			    for (int z = 0; z < numChunks.z; z++)
+			    {
+				    Vector3Int coord = new Vector3Int(x, y, z);
+				    var chunk = CreateChunk(coord);
+				    chunk.Initialise(meshMaterial);
+				    CreateChunkMesh(chunk, GetChunkTriangles(chunkIndex, islandTriangles));
+				    chunks.Add(chunk);
+				    chunkIndex++;
+			    }
+		    }
+	    }
+
+	    triangleBuffer.Release();
+	    triangleBuffer = null;*/
+    }
+
+	private void RequestMarchingCubes()
+	{
+		print("before");
+		int numVoxels = dimensions.x * dimensions.y * dimensions.z;
+		int maxTriangleCount = numVoxels * 5;
+		triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3 + sizeof(int), ComputeBufferType.Append);
+
+		triangleBuffer.SetCounterValue(0);
 		
-		noiseBuffer = new ComputeBuffer(numPointsPerChunk, sizeof(float) * 4, ComputeBufferType.Append);
+		marchingCubesShader.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
+		marchingCubesShader.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
+		marchingCubesShader.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
+		marchingCubesShader.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
+	    
+		marchingCubesShader.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale);
+	    
+		marchingCubesShader.SetFloat(Shader.PropertyToID("steepness"), steepness);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("centerSize"), centerSize);
+		marchingCubesShader.SetBool(Shader.PropertyToID("applyFallOff"), applyFallOffMap);
 		
-		// Go through all coords and create a chunk there if one doesn't already exist
-		for (int x = 0; x < numChunks.x; x++)
+		marchingCubesShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
+		marchingCubesShader.SetVector(Shader.PropertyToID("globalPos"), float4(transform.position, 0f));
+		
+		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
+		
+		marchingCubesShader.SetInt(Shader.PropertyToID("numPointsPerChunk"), numPointsPerChunk);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
+		
+		marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
+		//AsyncGPUReadback.Request(triangleBuffer, OnCompleteMarchingCubesReadback);
+		
+		triangleBuffer.Release();
+		triangleBuffer = null;
+	}
+	
+	private void OnCompleteMarchingCubesReadback(AsyncGPUReadbackRequest request){
+		if(!request.done){
+			Debug.Log("readback hasnt done yet");
+			return;
+		}
+
+
+		if(request.hasError){
+			Debug.Log("readback error");
+		}else
 		{
-			for (int y = 0; y < numChunks.y; y++)
+			StartCoroutine(CreateChunksCoroutine(request.GetData<Triangle>().ToArray()));
+		}
+	}
+
+	private IEnumerator CreateChunksCoroutine(Triangle[] islandTriangles)
+	{
+		print("coroutine");
+			int spawnedChunks = 0;
+			int spawnedChunksThisFrame = 0;
+			for (int x = 0; x < numChunks.x; x++)
 			{
-				for (int z = 0; z < numChunks.z; z++)
+				for (int y = 0; y < numChunks.y; y++)
 				{
-					Vector3Int coord = new Vector3Int(x, y, z);
-                    var chunk = CreateChunk(coord);
-                    chunk.Initialise(meshMaterial);
-					UpdateChunk(chunk);
-					chunks.Add(chunk);
+					for (int z = 0; z < numChunks.z; z++)
+					{
+						Vector3Int coord = new Vector3Int(x, y, z);
+						var chunk = CreateChunk(coord);
+						chunk.Initialise(meshMaterial);
+						CreateChunkMesh(chunk, GetChunkTriangles(spawnedChunks, islandTriangles));
+						chunks.Add(chunk);
+						spawnedChunksThisFrame++;
+						spawnedChunks++;
+						if (spawnedChunksThisFrame >= numChunksSpawnedPerFrame)
+						{
+							spawnedChunksThisFrame = 0;
+							yield return new WaitForEndOfFrameUnit();
+						}
+					}
 				}
 			}
+	}
+	
+	
+	private Triangle[] GetChunkTriangles(int chunkIndex, Triangle[] islandTriangles)
+	{
+		List<Triangle> chunkTriangles = new List<Triangle>();
+		foreach (Triangle tri in islandTriangles)
+		{
+			if(tri.chunkIndex == chunkIndex)
+				chunkTriangles.Add(tri);
 		}
-		
-		pointsBuffer.Release();
-		triangleBuffer.Release();
-		pointsBuffer = null;
-		triangleBuffer = null;
-		
-		noiseBuffer.Release();
-		noiseBuffer = null;
+
+		return chunkTriangles.ToArray();
 	}
 
 	IslandChunk CreateChunk(Vector3Int coord)
 	{
 		GameObject obj = new GameObject($"Chunk ({coord.x}, {coord.y}, {coord.z})");
 		obj.transform.parent = transform;
-		obj.transform.localPosition = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
+		obj.transform.localPosition = new Vector3(0f, 0f, 0f);
+		//obj.transform.localPosition = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
 		IslandChunk chunkScript = obj.AddComponent<IslandChunk>();
 		chunkScript.coord = coord;
 		return chunkScript;
 	}
 
-	private void UpdateChunk(IslandChunk chunk)
+	private void CreateChunkMesh(IslandChunk chunk, Triangle[] chunkTriangles)
 	{
-        float4[] posAndNoise = new float4[numPointsPerChunk];
-        
-        CreateNoise(posAndNoise, float3(chunkSize, chunkSize, chunkSize), chunk);
-        
-		pointsBuffer.SetData(posAndNoise);
-
-		triangleBuffer.SetCounterValue(0);
-		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("points"), pointsBuffer);
-		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
-		marchingCubesShader.SetInt(Shader.PropertyToID("numPointsPerAxis"), chunkSize + 1);
-		marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
-
-		marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
-
-		// Get number of triangles in the triangle buffer
-		ComputeBuffer.CopyCount(triangleBuffer, triCountBuffer, 0);
-		int[] triCountArray = { 0 };
-		triCountBuffer.GetData(triCountArray);
-		int numTris = triCountArray[0];
+		int numTris = chunkTriangles.Length;
 		
-		// Get triangle data from shader
-		Triangle[] tris = new Triangle[numTris];
-		triangleBuffer.GetData(tris, 0, 0, numTris);
-
-        Mesh mesh = chunk.mesh;
+		Mesh mesh = chunk.mesh;
 		mesh.Clear();
 
 		var vertices = new Vector3[numTris * 3];
@@ -151,44 +264,51 @@ public class ChunkMarchingCube : MonoBehaviour
 			for (int j = 0; j < 3; j++)
 			{
 				meshTriangles[i * 3 + j] = i * 3 + j;
-				vertices[i * 3 + j] = tris[i][j];
+				vertices[i * 3 + j] = chunkTriangles[i][j];
 			}
 		}
 		mesh.vertices = vertices;
 		mesh.triangles = meshTriangles;
 
 		mesh.RecalculateNormals();
-    }
-	
-    private void CreateNoise(float4[] posAndNoise, float3 dimensions, IslandChunk chunk)
-    {
+	}
+	private Triangle[] CalculateTriangles()
+	{
+		triangleBuffer.SetCounterValue(0);
+		
+		marchingCubesShader.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
+		marchingCubesShader.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
+		marchingCubesShader.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
+		marchingCubesShader.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
 	    
-	    noiseBuffer.SetCounterValue(0);
-	    noiseShader.SetBuffer(0, Shader.PropertyToID("posAndNoise"), noiseBuffer);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale);
 	    
-	    noiseShader.SetInt(Shader.PropertyToID("numPointsPerAxis"), chunkSize + 1);
-	    
-	    noiseShader.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
-	    noiseShader.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
-	    noiseShader.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
-	    noiseShader.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
-	    noiseShader.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
-	    
-	    noiseShader.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale);
-	    
-	    noiseShader.SetFloat(Shader.PropertyToID("steepness"), steepness);
-	    noiseShader.SetFloat(Shader.PropertyToID("centerSize"), centerSize);
-	    noiseShader.SetBool(Shader.PropertyToID("applyFallOff"), applyFallOffMap);
-	    
-	    noiseShader.SetVector(Shader.PropertyToID("dimensions"), float4(dimensions, 0f));
-	    noiseShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
-	    noiseShader.SetVector(Shader.PropertyToID("localPos"), float4(chunk.transform.localPosition, 0f));
-	    noiseShader.SetVector(Shader.PropertyToID("globalPos"), float4(chunk.transform.position, 0f));
-	    
-	    noiseShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
-	    
-	    noiseBuffer.GetData(posAndNoise, 0, 0, numPointsPerChunk);
-    }
+		marchingCubesShader.SetFloat(Shader.PropertyToID("steepness"), steepness);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("centerSize"), centerSize);
+		marchingCubesShader.SetBool(Shader.PropertyToID("applyFallOff"), applyFallOffMap);
+		
+		marchingCubesShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
+		marchingCubesShader.SetVector(Shader.PropertyToID("globalPos"), float4(transform.position, 0f));
+		
+		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
+		
+		marchingCubesShader.SetInt(Shader.PropertyToID("numPointsPerChunk"), numPointsPerChunk);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
+
+		marchingCubesShader.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, numThreadsPerAxis);
+		
+		
+		ComputeBuffer.CopyCount(triangleBuffer, triCountBuffer, 0);
+		int[] triCountArray = { 0 };
+		triCountBuffer.GetData(triCountArray);
+		int numTris = triCountArray[0];
+		
+		Triangle[] triangles =  new Triangle[numTris];
+		triangleBuffer.GetData(triangles, 0, 0, numTris);
+		
+		return triangles;
+	}
 
     private void ClearChunks()
     {
@@ -197,27 +317,28 @@ public class ChunkMarchingCube : MonoBehaviour
         
         chunks.Clear();
     }
+}
 
-	struct Triangle
-	{
+public struct Triangle
+{
 #pragma warning disable 649 // disable unassigned variable warning
-		public Vector3 a;
-		public Vector3 b;
-		public Vector3 c;
+	public Vector3 a;
+	public Vector3 b;
+	public Vector3 c;
+	public int chunkIndex;
 
-		public Vector3 this[int i]
+	public Vector3 this[int i]
+	{
+		get
 		{
-			get
+			switch (i)
 			{
-				switch (i)
-				{
-					case 0:
-						return a;
-					case 1:
-						return b;
-					default:
-						return c;
-				}
+				case 0:
+					return a;
+				case 1:
+					return b;
+				default:
+					return c;
 			}
 		}
 	}

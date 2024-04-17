@@ -1,6 +1,189 @@
 ﻿#pragma kernel March
 #include "/MarchTables.compute"
 
+#pragma region Noise
+#pragma region Hash
+struct SmallHash
+{
+    uint primeA;
+    uint primeB;
+    uint primeC;
+    uint primeD;
+    uint primeE;
+    
+    uint accumulator;
+
+    uint BytesA() { return accumulator & 255;}
+    uint BytesD() { return accumulator >> 24;}
+    
+    float Floats01A() { return (float)BytesA() * (1.0 / 255.0);}
+    float Floats01D() { return (float)BytesD() * (1.0 / 255.0);}
+
+    SmallHash Add(SmallHash h, int v)
+    {
+        h.accumulator += v;
+        return h;
+    }
+
+    uint ToUInt(SmallHash hash)
+    {
+        uint avalanche = hash.accumulator;
+        avalanche ^= avalanche >> 15;
+        avalanche *= primeB;
+        avalanche ^= avalanche >> 13;
+        avalanche *= primeC;
+        avalanche ^= avalanche >> 16;
+        return avalanche;
+    }
+
+    SmallHash Eat(SmallHash h, int data)
+    {
+        h.accumulator = RotateLeft(accumulator + (uint)data * primeC, 17) * primeD;
+        return h;
+    }
+
+    uint RotateLeft(uint data, int steps)
+    {
+        return (data << steps) | (data >> 32 - steps);
+    }
+};
+#pragma endregion
+
+int seed;
+int frequency;
+int octaves;
+int lacunarity;
+float persistence;
+
+float scale;
+
+float steepness;
+float centerSize;
+bool applyFallOff;
+
+float4 globalDimensions;
+float4 globalPos;
+ 
+struct LatticeSpan
+{
+    int p0, p1;
+    float g0, g1;
+    float t;
+};
+
+float FallOffEvaluate(float value)
+{
+    return pow(abs(value), steepness) / (pow(abs(value), steepness) + pow(abs(centerSize - centerSize * value), steepness));
+}
+
+float GetFallOffValue(float3 pos)
+{
+    if(!applyFallOff)
+        return 0.0;
+        
+    float x = pos.x / globalDimensions.x * 2.0;
+    float y = pos.y / globalDimensions.y * 2.0;
+    float z = pos.z / globalDimensions.z * 2.0;
+    
+    float val1 = max(abs(x), abs(y));
+    float val2 = max(val1, abs(z));
+    
+    return FallOffEvaluate(val2);
+}
+
+float3 GetPosition(int3 index)
+{
+    return float3(index.x - globalDimensions.x / 2, index.y - globalDimensions.y / 2, index.z - globalDimensions.z / 2);
+}
+
+float3 GetNoisePosition(int3 index) 
+{
+    return float3((globalPos.x + index.x) / globalDimensions.x, (globalPos.y + index.y) / globalDimensions.y, (globalPos.z + index.z) / globalDimensions.z) * scale;
+}
+
+LatticeSpan GetLatticeSpan(float coordinates, int frequency)
+{
+    coordinates *= frequency;
+    const float points = floor(coordinates);
+    LatticeSpan span;
+    span.p0 = (int)points;
+    span.p1 = span.p0 + 1;
+    span.g0 = coordinates - span.p0;
+    span.g1 = span.g0 - 1.0;
+    span.t = coordinates - points;
+    span.t = span.t * span.t * span.t * (span.t * (span.t * 6.0 - 15.0) + 10.0);
+    return span;
+}
+
+float PerlinEvaluate(SmallHash hash, float x, float y, float z)
+{
+    float gx = hash.Floats01A() * 2.0 - 1.0;
+    float gy = hash.Floats01D() * 2.0 - 1.0;
+    float gz = 1.0 - abs(gx) - abs(gy);
+    float offset = max(-gz, 0.0);
+    gx += gx < 0.0 ? offset : -offset;
+    gy += gy < 0.0 ? offset : -offset;
+    return (gx * x + gy * y + gz * z) / 0.56290;
+}
+
+float GetNoise(float3 noisePosition, SmallHash hash, int frequency)
+{
+    LatticeSpan x = GetLatticeSpan(noisePosition.x, frequency);
+    LatticeSpan y = GetLatticeSpan(noisePosition.y, frequency);
+    LatticeSpan z = GetLatticeSpan(noisePosition.z, frequency);
+
+    SmallHash h0 = hash.Eat(hash, x.p0);
+    SmallHash h1 = hash.Eat(hash, x.p1);
+
+    SmallHash h00 = h0.Eat(h0, y.p0);
+    SmallHash h01 = h0.Eat(h0, y.p1);
+    SmallHash h10 = h1.Eat(h1, y.p0);
+    SmallHash h11 = h1.Eat(h1, y.p1);
+
+    float L00 = lerp(PerlinEvaluate(h00.Eat(h00, z.p0), x.g0, y.g0, z.g0), PerlinEvaluate(h00.Eat(h00, z.p1), x.g0, y.g0, z.g1), z.t);
+    float L01 = lerp(PerlinEvaluate(h01.Eat(h01, z.p0), x.g0, y.g1, z.g0), PerlinEvaluate(h01.Eat(h01, z.p1), x.g0, y.g1, z.g1), z.t);
+			
+    float L0 = lerp(L00, L01, y.t);
+			
+    float L10 = lerp(PerlinEvaluate(h10.Eat(h10, z.p0), x.g1, y.g0, z.g0), PerlinEvaluate(h10.Eat(h10, z.p1), x.g1, y.g0, z.g1), z.t);
+    float L11 = lerp(PerlinEvaluate(h11.Eat(h11, z.p0), x.g1, y.g1, z.g0), PerlinEvaluate(h11.Eat(h11, z.p1), x.g1, y.g1, z.g1), z.t);
+			
+    float L1 = lerp(L10, L11, y.t);
+
+    return lerp(L0, L1, x.t);
+}
+
+float4 GenerateNoise(int3 id)
+{
+    SmallHash hash;
+    hash.primeA = 0x9E3779B1;
+    hash.primeB = 0x85EBCA77;
+    hash.primeC = 0xC2B2AE3D;
+    hash.primeD = 0x27D4EB2F;
+    hash.primeE = 0x165667B1;
+    hash.accumulator = seed + hash.primeE;
+    
+    int freq = frequency;
+    float amplitude = 1.0;
+    float amplitudeSum = 0.0;
+    float noiseSum = 0.0;
+
+    float3 noisePos = GetNoisePosition(id);
+    float3 pos = GetPosition(id);
+    
+    for(int j=0; j < octaves; j++)
+    {
+        noiseSum += GetNoise(noisePos, hash.Add(hash, j), frequency) * amplitude;
+        amplitudeSum += amplitude;
+        freq *= lacunarity;
+        amplitude *= persistence;
+    }
+    
+    return float4(pos, (noiseSum / amplitudeSum / 2 + 0.5) - GetFallOffValue(pos));
+}
+
+#pragma endregion
+
 static const int numThreads = 8;
 
 struct Triangle
@@ -8,12 +191,13 @@ struct Triangle
     float3 vertexC;
     float3 vertexB;
     float3 vertexA;
+    int chunkIndex;
 };
 
 AppendStructuredBuffer<Triangle> triangles;
-RWStructuredBuffer<float4> points;
+//AppendStructuredBuffer<int> trianglesChunkIndex;
 
-int numPointsPerAxis;
+int numPointsPerChunk;
 float isoLevel;
 
 float3 interpolateVerts(float4 v1, float4 v2)
@@ -24,14 +208,14 @@ float3 interpolateVerts(float4 v1, float4 v2)
 
 int indexFromCoord(int x, int y, int z) 
 {
-    return z * numPointsPerAxis * numPointsPerAxis + y * numPointsPerAxis + x;
+    return z * globalDimensions.x * globalDimensions.y + y * globalDimensions.x + x;
 }
 
 [numthreads(numThreads,numThreads,numThreads)]
 void March (int3 id : SV_DispatchThreadID)
 {   
     // Stop one point before the end because voxel includes neighbouring points
-    if (id.x >= numPointsPerAxis-1 || id.y >= numPointsPerAxis-1 || id.z >= numPointsPerAxis-1) 
+    if (id.x >= globalDimensions.x || id.y >= globalDimensions.y || id.z >= globalDimensions.z) 
     {
         return;
     }
@@ -39,14 +223,14 @@ void March (int3 id : SV_DispatchThreadID)
     // 8 corners of the current cube
     float4 cubeCorners[8] = 
     {
-        points[indexFromCoord(id.x, id.y, id.z)],
-        points[indexFromCoord(id.x + 1, id.y, id.z)],
-        points[indexFromCoord(id.x + 1, id.y, id.z + 1)],
-        points[indexFromCoord(id.x, id.y, id.z + 1)],
-        points[indexFromCoord(id.x, id.y + 1, id.z)],
-        points[indexFromCoord(id.x + 1, id.y + 1, id.z)],
-        points[indexFromCoord(id.x + 1, id.y + 1, id.z + 1)],
-        points[indexFromCoord(id.x, id.y + 1, id.z + 1)]
+        GenerateNoise(id),
+        GenerateNoise(int3(id.x + 1, id.y, id.z)),
+        GenerateNoise(int3(id.x + 1, id.y, id.z + 1)),
+        GenerateNoise(int3(id.x, id.y, id.z + 1)),
+        GenerateNoise(int3(id.x, id.y + 1, id.z)),
+        GenerateNoise(int3(id.x + 1, id.y + 1, id.z)),
+        GenerateNoise(int3(id.x + 1, id.y + 1, id.z + 1)),
+        GenerateNoise(int3(id.x, id.y + 1, id.z + 1))
     };
 
     // Calculate unique index for each cube configuration.
@@ -81,6 +265,20 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
         tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
         tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
+        tri.chunkIndex = indexFromCoord(id.x, id.y, id.z) / numPointsPerChunk;
+
+        /*int chunkIndex = indexFromCoord(id.x, id.y, id.z) / numPointsPerChunk;
+        float3 vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
+        float3 vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
+        float3 vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
+        
+        float3x4 tri =
+        {
+            vertexA.x, vertexB.x, vertexC.x, chunkIndex,
+            vertexA.y, vertexB.y, vertexC.y, -1,
+            vertexA.z, vertexB.z, vertexC.z, -1
+        };*/
+        
         triangles.Append(tri);
     }
 }

@@ -1,5 +1,50 @@
 #pragma kernel GenerateNoise
-#include "HashCompute.compute"
+#pragma region Hash
+struct SmallHash
+{
+    uint primeA;
+    uint primeB;
+    uint primeC;
+    uint primeD;
+    uint primeE;
+    
+    uint accumulator;
+
+    uint BytesA() { return accumulator & 255;}
+    uint BytesD() { return accumulator >> 24;}
+    
+    float Floats01A() { return (float)BytesA() * (1.0 / 255.0);}
+    float Floats01D() { return (float)BytesD() * (1.0 / 255.0);}
+
+    SmallHash Add(SmallHash h, int v)
+    {
+        h.accumulator += v;
+        return h;
+    }
+
+    uint ToUInt(SmallHash hash)
+    {
+        uint avalanche = hash.accumulator;
+        avalanche ^= avalanche >> 15;
+        avalanche *= primeB;
+        avalanche ^= avalanche >> 13;
+        avalanche *= primeC;
+        avalanche ^= avalanche >> 16;
+        return avalanche;
+    }
+
+    SmallHash Eat(SmallHash h, int data)
+    {
+        h.accumulator = RotateLeft(accumulator + (uint)data * primeC, 17) * primeD;
+        return h;
+    }
+
+    uint RotateLeft(uint data, int steps)
+    {
+        return (data << steps) | (data >> 32 - steps);
+    }
+};
+#pragma endregion
 
 static const int numThreads = 8;
 RWStructuredBuffer<float4> posAndNoise;
