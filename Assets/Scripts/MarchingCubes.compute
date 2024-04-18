@@ -63,6 +63,9 @@ bool applyFallOff;
 
 float4 globalDimensions;
 float4 globalPos;
+float4 localPos;
+
+int chunkSize;
  
 struct LatticeSpan
 {
@@ -81,9 +84,9 @@ float GetFallOffValue(float3 pos)
     if(!applyFallOff)
         return 0.0;
         
-    float x = pos.x / globalDimensions.x * 2.0;
-    float y = pos.y / globalDimensions.y * 2.0;
-    float z = pos.z / globalDimensions.z * 2.0;
+    float x = (pos.x + localPos.x) / globalDimensions.x * 2.0;
+    float y = (pos.y + localPos.y) / globalDimensions.y * 2.0;
+    float z = (pos.z + localPos.z) / globalDimensions.z * 2.0;
     
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));
@@ -93,12 +96,12 @@ float GetFallOffValue(float3 pos)
 
 float3 GetPosition(int3 index)
 {
-    return float3(index.x - globalDimensions.x / 2, index.y - globalDimensions.y / 2, index.z - globalDimensions.z / 2);
+    return float3(index.x - chunkSize / 2, index.y - chunkSize / 2, index.z - chunkSize / 2);
 }
 
 float3 GetNoisePosition(int3 index) 
 {
-    return float3((globalPos.x + index.x) / globalDimensions.x, (globalPos.y + index.y) / globalDimensions.y, (globalPos.z + index.z) / globalDimensions.z) * scale;
+    return float3((globalPos.x + index.x) / chunkSize, (globalPos.y + index.y) / chunkSize, (globalPos.z + index.z) / chunkSize) * scale;
 }
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
@@ -197,7 +200,7 @@ struct Triangle
 AppendStructuredBuffer<Triangle> triangles;
 //AppendStructuredBuffer<int> trianglesChunkIndex;
 
-int numPointsPerChunk;
+int chunkIndex;
 float isoLevel;
 
 float3 interpolateVerts(float4 v1, float4 v2)
@@ -208,14 +211,14 @@ float3 interpolateVerts(float4 v1, float4 v2)
 
 int indexFromCoord(int x, int y, int z) 
 {
-    return z * globalDimensions.x * globalDimensions.y + y * globalDimensions.x + x;
+    return z * (chunkSize + 1) * (chunkSize + 1) + y * (chunkSize + 1) + x;
 }
 
 [numthreads(numThreads,numThreads,numThreads)]
 void March (int3 id : SV_DispatchThreadID)
 {   
     // Stop one point before the end because voxel includes neighbouring points
-    if (id.x >= globalDimensions.x || id.y >= globalDimensions.y || id.z >= globalDimensions.z) 
+    if (id.x >= chunkSize || id.y >= chunkSize || id.z >= chunkSize) 
     {
         return;
     }
@@ -265,7 +268,7 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
         tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
         tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
-        tri.chunkIndex = indexFromCoord(id.x, id.y, id.z) / numPointsPerChunk;
+        tri.chunkIndex = chunkIndex;
 
         /*int chunkIndex = indexFromCoord(id.x, id.y, id.z) / numPointsPerChunk;
         float3 vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
