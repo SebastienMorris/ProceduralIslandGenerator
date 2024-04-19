@@ -61,11 +61,10 @@ float steepness;
 float centerSize;
 bool applyFallOff;
 
+float4 dimensions;
 float4 globalDimensions;
 float4 globalPos;
 float4 localPos;
-
-int chunkSize;
  
 struct LatticeSpan
 {
@@ -96,12 +95,12 @@ float GetFallOffValue(float3 pos)
 
 float3 GetPosition(int3 index)
 {
-    return float3(index.x - chunkSize / 2, index.y - chunkSize / 2, index.z - chunkSize / 2);
+    return float3(index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
 }
 
 float3 GetNoisePosition(int3 index) 
 {
-    return float3((globalPos.x + index.x) / chunkSize, (globalPos.y + index.y) / chunkSize, (globalPos.z + index.z) / chunkSize) * scale;
+    return float3((globalPos.x + index.x) / dimensions.x, (globalPos.y + index.y) / dimensions.y, (globalPos.z + index.z) / dimensions.z) * scale;
 }
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
@@ -197,8 +196,8 @@ struct Triangle
     int chunkIndex;
 };
 
+
 AppendStructuredBuffer<Triangle> triangles;
-//AppendStructuredBuffer<int> trianglesChunkIndex;
 
 int chunkIndex;
 float isoLevel;
@@ -211,16 +210,27 @@ float3 interpolateVerts(float4 v1, float4 v2)
 
 int indexFromCoord(int x, int y, int z) 
 {
-    return z * (chunkSize + 1) * (chunkSize + 1) + y * (chunkSize + 1) + x;
+    return z * (dimensions.x + 1) * (dimensions.y + 1) + y * (dimensions.z + 1) + x;
 }
 
 [numthreads(numThreads,numThreads,numThreads)]
 void March (int3 id : SV_DispatchThreadID)
 {   
     // Stop one point before the end because voxel includes neighbouring points
-    if (id.x >= chunkSize || id.y >= chunkSize || id.z >= chunkSize) 
+    if (id.x >= dimensions.x || id.y >= dimensions.y || id.z >= dimensions.z) 
     {
         return;
+    }
+
+    if(id.x == 0 && id.y == 0 && id.z == 0)
+    {
+        Triangle tri;
+        tri.vertexA = float3(0,0,0);
+        tri.vertexB = float3(0,0,0);
+        tri.vertexC = float3(0,0,0);
+        tri.chunkIndex = chunkIndex;
+
+        triangles.Append(tri);
     }
 
     // 8 corners of the current cube
@@ -269,18 +279,6 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
         tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
         tri.chunkIndex = chunkIndex;
-
-        /*int chunkIndex = indexFromCoord(id.x, id.y, id.z) / numPointsPerChunk;
-        float3 vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
-        float3 vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
-        float3 vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
-        
-        float3x4 tri =
-        {
-            vertexA.x, vertexB.x, vertexC.x, chunkIndex,
-            vertexA.y, vertexB.y, vertexC.y, -1,
-            vertexA.z, vertexB.z, vertexC.z, -1
-        };*/
         
         triangles.Append(tri);
     }
