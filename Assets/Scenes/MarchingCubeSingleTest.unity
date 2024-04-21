@@ -348,8 +348,8 @@ MonoBehaviour:
     octaves: 1
     lacunarity: 2
     persistence: 0.5
-    scale: 1
-  applyFallOffMap: 0
+    scale: 0.3
+  applyFallOffMap: 1
   steepness: 2
   centerSize: 10
 --- !u!4 &785088675
