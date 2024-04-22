@@ -334,72 +334,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 095dcc9790590234b8da014426c8e023, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  debug: 1
+  marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
+  meshMaterial: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
+  numChunksSpawnedPerFrame: 10
+  numThreadsPerAxis: 8
   dimensions: {x: 80, y: 40, z: 80}
+  chunkSize: 10
   surfaceLevel: 0.5
-  mat: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
   noiseSettings:
     seed: 0
     frequency: 2
     octaves: 1
     lacunarity: 2
     persistence: 0.5
-  domainTRS:
-    translation:
-      x: 0
-      y: 0
-      z: 0
-    rotation:
-      x: 0
-      y: 0
-      z: 0
-    scale:
-      x: 0.2
-      y: 0.2
-      z: 0.2
-  largeMarchingCubePrefab: {fileID: 109730463941254062, guid: a74a6f0582b0f564485678813af7beb9, type: 3}
-  chunkSize: 10
+    scale: 0.3
+  applyFallOffMap: 1
   steepness: 2
   centerSize: 10
-  noiseGen: {fileID: 480249544}
-  fallOffMap: {fileID: 892455561}
-  useFallOffMap: 1
-  fallOffCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.61858886
-      value: 0.38265222
-      inSlope: 1.2371776
-      outSlope: 1.2371776
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  debug: 1
-  marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
-  noiseComputeShader: {fileID: 7200000, guid: 44f6f346a8374344b818ee72c089ec7e, type: 3}
-  numThreadsPerAxis: 8
 --- !u!4 &785088675
 Transform:
   m_ObjectHideFlags: 0
