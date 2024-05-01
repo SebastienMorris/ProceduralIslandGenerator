@@ -1,26 +1,20 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Unity.Collections;
-using Unity.Jobs;
-using Unity.Mathematics;
-using Unity.VisualScripting;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Profiling;
-using UnityEngine.Rendering;
-using UnityEngine.Serialization;
 using static Unity.Mathematics.math;
-using static Noise;
+using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
-using static UnityEditor.PlayerSettings;
-using float4 = Unity.Mathematics.float4;
 
 public class ChunkMarchingCube : MonoBehaviour
 {
-	[SerializeField] private bool debug;
+	#region Attributes
+
+	[SerializeField] private IslandElementPlacement islandElementPlacement;
+
+	[SerializeField, Header("Generation")] private bool debug;
+
+	[SerializeField] private GameObject islandChunkPrefab;
 	
 	[SerializeField] private ComputeShader marchingCubesShader;
 	
@@ -48,7 +42,8 @@ public class ChunkMarchingCube : MonoBehaviour
 	private List<Triangle[]> calculatedChunks = new List<Triangle[]>();
 
 	private bool calculateTriangles;
-	
+	#endregion
+
 	private void Update()
     {
 	    if (Input.GetKeyUp(KeyCode.G))
@@ -92,8 +87,7 @@ public class ChunkMarchingCube : MonoBehaviour
 			    for (int z = 0; z < numChunks.z; z++) 
 			    { 
 				    Vector3Int coord = new Vector3Int(x, y, z); 
-				    var chunk = CreateChunk(coord); 
-				    chunk.Initialise(meshMaterial);
+				    var chunk = CreateChunk(coord);
 				    chunks.Add(chunk); 
 				    CalculateChunkTriangles(chunk, chunkIndex); 
 				    chunkIndex++; 
@@ -102,8 +96,8 @@ public class ChunkMarchingCube : MonoBehaviour
 				    {
 					    spawnedChunksThisFrame = 0;
 					    yield return new WaitForEndOfFrame();
-					    
-				    }
+						
+					}
 			    }
 		    }
 	    }
@@ -128,18 +122,17 @@ public class ChunkMarchingCube : MonoBehaviour
 			    spawnedChunks++;
 		    }
 		    yield return new WaitForEndOfFrame();
-	    }
-    }
+		}
+		islandElementPlacement.InitPlacement(transform.position, dimensions.y, new Vector2(dimensions.x, dimensions.z));
+	}
     
     IslandChunk CreateChunk(Vector3Int coord)
     {
-	    GameObject obj = new GameObject($"Chunk ({coord.x}, {coord.y}, {coord.z})");
-	    obj.transform.parent = transform;
-	    obj.transform.localPosition = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
-	    IslandChunk chunkScript = obj.AddComponent<IslandChunk>();
-	    chunkScript.coord = coord;
-	    return chunkScript;
-    }
+		GameObject obj = Instantiate(islandChunkPrefab, transform);
+		obj.name = $"Chunk ({coord.x}, {coord.y}, {coord.z})";// DEV
+		obj.transform.localPosition = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
+		return obj.GetComponent<IslandChunk>();
+	}
 
 	private void CalculateChunkTriangles(IslandChunk chunk, int chunkIndex)
 	{
@@ -180,16 +173,18 @@ public class ChunkMarchingCube : MonoBehaviour
 
 		calculatedChunks.Add(tris);
 	}
-	
 
 	private void CreateChunkMesh(IslandChunk chunk, Triangle[] chunkTriangles)
 	{
 		int numTris = chunkTriangles.Length;
-		
-		Mesh mesh = chunk.mesh;
+
+		Mesh mesh = new Mesh();
 		mesh.Clear();
 
 		var vertices = new Vector3[numTris * 3];
+
+		if (numTris < 2) return;
+
 		var meshTriangles = new int[numTris * 3];
 
 		for (int i = 0; i < numTris; i++)
@@ -202,8 +197,8 @@ public class ChunkMarchingCube : MonoBehaviour
 		}
 		mesh.vertices = vertices;
 		mesh.triangles = meshTriangles;
-
 		mesh.RecalculateNormals();
+		chunk.Initialise(mesh);
 	}
 
     private void ClearChunks()
@@ -211,7 +206,7 @@ public class ChunkMarchingCube : MonoBehaviour
 	    StopCoroutine(CreateChunksCoroutine(0));
 	    StopCoroutine(ChunkTriangleCalcCoroutine(Vector3Int.zero));
         foreach(var chunk in chunks) 
-	        Destroy(chunk.gameObject);
+	    Destroy(chunk.gameObject);
         
         chunks.Clear();
         calculatedChunks.Clear();

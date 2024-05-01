@@ -29,7 +29,6 @@ public struct ChunkJob : IJobFor
         obj.transform.localPosition = new Vector3(0f, 0f, 0f);
         //obj.transform.localPosition = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
         IslandChunk chunkScript = obj.AddComponent<IslandChunk>();
-        chunkScript.coord = new Vector3Int(coord.x,coord.y,coord.z);
         return chunkScript;
     }
 
