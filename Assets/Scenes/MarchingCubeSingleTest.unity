@@ -343,11 +343,11 @@ MonoBehaviour:
   numThreadsPerAxis: 8
   dimensions: {x: 80, y: 40, z: 80}
   chunkSize: 10
-  surfaceLevel: 0.5
+  surfaceLevel: 0.55
   noiseSettings:
     seed: 0
     frequency: 2
-    octaves: 1
+    octaves: 3
     lacunarity: 2
     persistence: 0.5
     scale: 0.3
@@ -784,8 +784,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce31a7b383ac00d49a365946a90d40fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  slopeThreshold: 0.6
-  testRb: {fileID: 1562048020}
+  elementDataToSpawn: {fileID: 11400000, guid: cdc0b0878a8cb7c4cb6c0a3b6bd6d082, type: 2}
 --- !u!4 &1969865842
 Transform:
   m_ObjectHideFlags: 0

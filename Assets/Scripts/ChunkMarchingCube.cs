@@ -123,7 +123,7 @@ public class ChunkMarchingCube : MonoBehaviour
 		    }
 		    yield return new WaitForEndOfFrame();
 		}
-		islandElementPlacement.InitPlacement(transform.position, dimensions.y, new Vector2(dimensions.x, dimensions.z));
+		islandElementPlacement.InitPlacement(transform.position, dimensions, transform);
 	}
     
     IslandChunk CreateChunk(Vector3Int coord)
