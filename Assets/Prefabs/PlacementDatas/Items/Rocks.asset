@@ -9,13 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bbf8c160a0e19d44e80ae6dcbb227926, type: 3}
-  m_Name: RockPlacementData
+  m_Script: {fileID: 11500000, guid: ec452ad2808cc7d42859e71ca2fb40bc, type: 3}
+  m_Name: Rocks
   m_EditorClassIdentifier: 
   slopeThreshold: 1
   proximityRadius: 3
   minHeight: -100
   maxHeight: 0
+  influence: 2
   minScale: 0.2
   maxScale: 3
   prefabs:

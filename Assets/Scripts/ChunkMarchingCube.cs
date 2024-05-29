@@ -11,6 +11,8 @@ public class ChunkMarchingCube : MonoBehaviour
 	#region Attributes
 
 	[SerializeField] private IslandElementPlacement islandElementPlacement;
+	[SerializeField] private ItemPlacementData[] itemPlacementDatas;
+	[SerializeField] private ZonePlacementData[] zonePlacementDatas;
 
 	[SerializeField, Header("Generation")] private bool debug;
 
@@ -123,7 +125,10 @@ public class ChunkMarchingCube : MonoBehaviour
 		    }
 		    yield return new WaitForEndOfFrame();
 		}
-		islandElementPlacement.InitPlacement(transform.position, dimensions, transform);
+
+		//var itemDatas = new ItemPlacementData[] {  }
+
+		islandElementPlacement.InitPlacement(transform.position, dimensions, transform, itemPlacementDatas, zonePlacementDatas);
 	}
     
     IslandChunk CreateChunk(Vector3Int coord)

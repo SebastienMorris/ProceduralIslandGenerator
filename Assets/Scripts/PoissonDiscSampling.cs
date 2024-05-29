@@ -9,7 +9,7 @@ public static class PoissonDiscSampling
 	/// <param name="nbSamplesBeforeRejection"> Le nombre d'essais de placements de points avant abandon. </param>
 	/// <param name="nbPoints"> Le nombre de points à placer au total. </param>
 	/// <returns> Une liste de points dans l'espace 2D. </returns>
-	public static List<Vector2> GeneratePoints(float radius, Vector2 sampleRegionSize, int nbSamplesBeforeRejection = 30, int nbPoints = -1)
+	public static List<Vector2> GeneratePoints(float radius, Vector2 sampleRegionSize, int nbPoints = -1, int nbSamplesBeforeRejection = 30)
 	{
 		// Initialisation de la taille des cellules en fonction de l'écart entre chaque points.
 		float cellSize = radius / Mathf.Sqrt(2);
