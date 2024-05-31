@@ -73,11 +73,12 @@ public class IslandElementPlacement : MonoBehaviour
 			// Passes d'instanciations d'élements sur l'île.
 			for (int i = islandMaxHeight; i >= -islandMaxHeight; i -= spawnPassStep)
 			{
-				if (i < minHeight) return;
+				if (i < minHeight) break;
 				if (i > maxHeight) continue;
 				PointPlacementPass(itemData, i);
 			}
 
+			print("Placement des objets");
 			ElementSpawn(itemData, zonesPlacementDatas != null);
 		}
 		print(instantiatedPrefabs.Count);
