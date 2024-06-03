@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8735223711215464822
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5958316596896379103}
+  - component: {fileID: 7864050884875206350}
+  - component: {fileID: 5033921517779892952}
+  m_Layer: 0
+  m_Name: Island
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5958316596896379103
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8735223711215464822}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7864050884875206350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8735223711215464822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 095dcc9790590234b8da014426c8e023, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  islandElementPlacement: {fileID: 5033921517779892952}
+  itemPlacementDatas:
+  - {fileID: 11400000, guid: 63d2d232e8ce64e46b1e1a6b2b9edd90, type: 2}
+  - {fileID: 11400000, guid: da21247b29415c44e9449b1f40c3fec0, type: 2}
+  zonePlacementDatas: []
+  debug: 1
+  islandChunkPrefab: {fileID: 9089048057180669692, guid: 92d41f251d362e1479f1f94f8aa3b30a, type: 3}
+  marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
+  meshMaterial: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
+  numChunksSpawnedPerFrame: 10
+  numThreadsPerAxis: 8
+  dimensions: {x: 80, y: 40, z: 80}
+  chunkSize: 10
+  surfaceLevel: 0.49
+  steepness: 3
+  centerSize: 10
+  noiseSettings:
+    seed: 1597675
+    frequency: 2
+    octaves: 4
+    lacunarity: 2
+    persistence: 0.2
+    scale: 0.4
+  applyFallOffMap: 1
+--- !u!114 &5033921517779892952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8735223711215464822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce31a7b383ac00d49a365946a90d40fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debugDisplay: 1

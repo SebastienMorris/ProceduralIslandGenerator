@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using static Unity.Mathematics.math;
 using Vector3 = UnityEngine.Vector3;
 
-public class ChunkMarchingCube : MonoBehaviour
+public class IslandGenerator : MonoBehaviour
 {
 	#region Attributes
 
@@ -24,15 +25,16 @@ public class ChunkMarchingCube : MonoBehaviour
 	[SerializeField, Min(1)] private int numChunksSpawnedPerFrame = 1;
 	[SerializeField] private int numThreadsPerAxis = 8;
 	
-	[SerializeField] private Vector3Int dimensions = new (0, 0, 0);
+	public Vector3Int dimensions = new (0, 0, 0);
 	[SerializeField] private int chunkSize = 10;
-    [SerializeField] [Range(0, 1)] private float surfaceLevel = 0.5f;
-
-    [SerializeField] private NoiseSettings noiseSettings = NoiseSettings.Default;
+    [Range(0, 1)] public float surfaceLevel = 0.5f;
+	[Range(0.1f, 10)] public float steepness = 2f;
+	[SerializeField][Range(0.1f, 10)] private float centerSize = 10f;
+	public NoiseSettings noiseSettings = NoiseSettings.Default;
 
     [SerializeField] private bool applyFallOffMap;
-    [SerializeField][Range(0.1f, 10)] private float steepness = 2f;
-    [SerializeField][Range(0.1f, 10)] private float centerSize = 10f;
+    
+    
     
     
 	private ComputeBuffer triangleBuffer;
@@ -43,6 +45,9 @@ public class ChunkMarchingCube : MonoBehaviour
 	private List<Triangle[]> calculatedChunks = new List<Triangle[]>();
 
 	private bool calculateTriangles;
+
+	public delegate void IslandGenerated();
+	public event IslandGenerated OnIslandGenerated;
 	#endregion
 
 	private void Update()
@@ -63,7 +68,7 @@ public class ChunkMarchingCube : MonoBehaviour
         }
     }
 
-    void InitChunks()
+    public void InitChunks()
     {
 	    int numVoxels = chunkSize * chunkSize * chunkSize;
 	    int maxTriangleCount = numVoxels * 5;
@@ -128,6 +133,7 @@ public class ChunkMarchingCube : MonoBehaviour
 		//var itemDatas = new ItemPlacementData[] {  }
 
 		islandElementPlacement.InitPlacement(transform.position, dimensions, transform, itemPlacementDatas, zonePlacementDatas);
+		OnIslandGenerated?.Invoke();
 	}
     
     IslandChunk CreateChunk(Vector3Int coord)
@@ -202,6 +208,15 @@ public class ChunkMarchingCube : MonoBehaviour
 		mesh.vertices = vertices;
 		mesh.triangles = meshTriangles;
 		mesh.RecalculateNormals();
+
+		// Flat shading
+		/*var normals = new Vector3[vertices.Length];
+		for (var i = 0; i < vertices.Length; i++)
+		{
+			normals[i] = vertices[i].normalized;
+		}
+		mesh.normals = normals;*/
+
 		chunk.Initialise(mesh);
 	}
 
@@ -256,5 +271,7 @@ public struct NoiseSettings
 
 	[Range(0.1f, 2f)] public float scale;
 
-	public static NoiseSettings Default => new NoiseSettings{frequency = 4, octaves = 1, lacunarity = 2, persistence = 0.5f, scale = 1f};
+	public static NoiseSettings Default => new NoiseSettings { frequency = 4, octaves = 1, lacunarity = 2, persistence = 0.5f, scale = 0.2f };
+
+	public static NoiseSettings StartIsland => new NoiseSettings { seed = 1, frequency = 2, octaves = 4, lacunarity = 2, persistence = 0.231f, scale = 0.22f };
 }

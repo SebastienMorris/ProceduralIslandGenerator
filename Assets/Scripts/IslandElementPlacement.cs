@@ -167,7 +167,7 @@ public class IslandElementPlacement : MonoBehaviour
 
 		#region Sélection des points
 
-		/*Gizmos.color = Color.blue;
+		Gizmos.color = Color.blue;
 
 		foreach(var d in displayOrigins)
 		{
@@ -181,7 +181,7 @@ public class IslandElementPlacement : MonoBehaviour
 			if (i < minHeight) return;
 			if (i > maxHeight) continue;
 			Gizmos.DrawWireCube(center + Vector3.up * i, islandSpreadSize3D);
-		}*/
+		}
 		#endregion
 	}
 }
