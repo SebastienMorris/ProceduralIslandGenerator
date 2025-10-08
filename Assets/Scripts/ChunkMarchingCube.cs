@@ -53,6 +53,7 @@ public class ChunkMarchingCube : MonoBehaviour
     {
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
+		    print("uhrfiluerhiuherf");
 		    ClearChunks();
 		    InitChunks();
 	    }
