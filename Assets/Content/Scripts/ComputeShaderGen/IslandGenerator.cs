@@ -18,7 +18,7 @@ using Vector3 = UnityEngine.Vector3;
 using static UnityEditor.PlayerSettings;
 using float4 = Unity.Mathematics.float4;
 
-public class ChunkMarchingCube : MonoBehaviour
+public class IslandGenerator : MonoBehaviour
 {
 	[SerializeField] private bool debug;
 	
@@ -53,7 +53,7 @@ public class ChunkMarchingCube : MonoBehaviour
     {
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
-		    print("uhrfiluerhiuherf");
+		    print("start generation");
 		    ClearChunks();
 		    InitChunks();
 	    }
@@ -185,7 +185,7 @@ public class ChunkMarchingCube : MonoBehaviour
 
 	private void CreateChunkMesh(IslandChunk chunk, Triangle[] chunkTriangles)
 	{
-		int numTris = chunkTriangles.Length;
+		/*int numTris = chunkTriangles.Length;
 		
 		Mesh mesh = chunk.mesh;
 		mesh.Clear();
@@ -204,7 +204,7 @@ public class ChunkMarchingCube : MonoBehaviour
 		mesh.vertices = vertices;
 		mesh.triangles = meshTriangles;
 
-		mesh.RecalculateNormals();
+		mesh.RecalculateNormals();*/
 	}
 
     private void ClearChunks()
