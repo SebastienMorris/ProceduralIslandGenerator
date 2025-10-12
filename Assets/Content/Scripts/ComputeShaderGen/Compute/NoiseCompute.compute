@@ -1,56 +1,5 @@
-#pragma kernel GenerateNoise
-#pragma region Hash
-struct SmallHash
-{
-    uint primeA;
-    uint primeB;
-    uint primeC;
-    uint primeD;
-    uint primeE;
-    
-    uint accumulator;
+#include "HashCompute.compute"
 
-    uint BytesA() { return accumulator & 255;}
-    uint BytesD() { return accumulator >> 24;}
-    
-    float Floats01A() { return (float)BytesA() * (1.0 / 255.0);}
-    float Floats01D() { return (float)BytesD() * (1.0 / 255.0);}
-
-    SmallHash Add(SmallHash h, int v)
-    {
-        h.accumulator += v;
-        return h;
-    }
-
-    uint ToUInt(SmallHash hash)
-    {
-        uint avalanche = hash.accumulator;
-        avalanche ^= avalanche >> 15;
-        avalanche *= primeB;
-        avalanche ^= avalanche >> 13;
-        avalanche *= primeC;
-        avalanche ^= avalanche >> 16;
-        return avalanche;
-    }
-
-    SmallHash Eat(SmallHash h, int data)
-    {
-        h.accumulator = RotateLeft(accumulator + (uint)data * primeC, 17) * primeD;
-        return h;
-    }
-
-    uint RotateLeft(uint data, int steps)
-    {
-        return (data << steps) | (data >> 32 - steps);
-    }
-};
-#pragma endregion
-
-static const int numThreads = 8;
-RWStructuredBuffer<float4> posAndNoise;
-
-
-int numPointsPerAxis;
 int seed;
 int frequency;
 int octaves;
@@ -65,14 +14,9 @@ bool applyFallOff;
 
 float4 dimensions;
 float4 globalDimensions;
-float4 localPos;
 float4 globalPos;
+float4 localPos;
 
-int IndexFromCoord(int x, int y, int z) 
-{
-    return z * numPointsPerAxis * numPointsPerAxis + y * numPointsPerAxis + x;
-}
- 
 struct LatticeSpan
 {
     int p0, p1;
@@ -87,16 +31,16 @@ float FallOffEvaluate(float value)
 
 float GetFallOffValue(float3 pos)
 {
-    if(!applyFallOff)
+    if (!applyFallOff)
         return 0.0;
-        
+
     float x = (pos.x + localPos.x) / globalDimensions.x * 2.0;
     float y = (pos.y + localPos.y) / globalDimensions.y * 2.0;
     float z = (pos.z + localPos.z) / globalDimensions.z * 2.0;
-    
+
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));
-    
+
     return FallOffEvaluate(val2);
 }
 
@@ -105,7 +49,7 @@ float3 GetPosition(int3 index)
     return float3(index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
 }
 
-float3 GetNoisePosition(int3 index) 
+float3 GetNoisePosition(int3 index)
 {
     return float3((globalPos.x + index.x) / dimensions.x, (globalPos.y + index.y) / dimensions.y, (globalPos.z + index.z) / dimensions.z) * scale;
 }
@@ -151,27 +95,19 @@ float GetNoise(float3 noisePosition, SmallHash hash, int frequency)
 
     float L00 = lerp(PerlinEvaluate(h00.Eat(h00, z.p0), x.g0, y.g0, z.g0), PerlinEvaluate(h00.Eat(h00, z.p1), x.g0, y.g0, z.g1), z.t);
     float L01 = lerp(PerlinEvaluate(h01.Eat(h01, z.p0), x.g0, y.g1, z.g0), PerlinEvaluate(h01.Eat(h01, z.p1), x.g0, y.g1, z.g1), z.t);
-			
+
     float L0 = lerp(L00, L01, y.t);
-			
+
     float L10 = lerp(PerlinEvaluate(h10.Eat(h10, z.p0), x.g1, y.g0, z.g0), PerlinEvaluate(h10.Eat(h10, z.p1), x.g1, y.g0, z.g1), z.t);
     float L11 = lerp(PerlinEvaluate(h11.Eat(h11, z.p0), x.g1, y.g1, z.g0), PerlinEvaluate(h11.Eat(h11, z.p1), x.g1, y.g1, z.g1), z.t);
-			
+
     float L1 = lerp(L10, L11, y.t);
 
     return lerp(L0, L1, x.t);
 }
 
-[numthreads(numThreads, numThreads, numThreads)]
-void GenerateNoise(int3 id : SV_DispatchThreadID)
+float4 GenerateNoise(int3 id)
 {
-    if (id.x >= numPointsPerAxis || id.y >= numPointsPerAxis || id.z >= numPointsPerAxis) 
-    {
-        return;
-    }
-    
-    const int i = IndexFromCoord(id.x, id.y, id.z);
-    
     SmallHash hash;
     hash.primeA = 0x9E3779B1;
     hash.primeB = 0x85EBCA77;
@@ -179,7 +115,7 @@ void GenerateNoise(int3 id : SV_DispatchThreadID)
     hash.primeD = 0x27D4EB2F;
     hash.primeE = 0x165667B1;
     hash.accumulator = seed + hash.primeE;
-    
+
     int freq = frequency;
     float amplitude = 1.0;
     float amplitudeSum = 0.0;
@@ -187,14 +123,14 @@ void GenerateNoise(int3 id : SV_DispatchThreadID)
 
     float3 noisePos = GetNoisePosition(id);
     float3 pos = GetPosition(id);
-    
-    for(int j=0; j < octaves; j++)
+
+    for (int j = 0; j < octaves; j++)
     {
         noiseSum += GetNoise(noisePos, hash.Add(hash, j), frequency) * amplitude;
         amplitudeSum += amplitude;
         freq *= lacunarity;
         amplitude *= persistence;
     }
-    
-    posAndNoise[i] = float4(pos, (noiseSum / amplitudeSum / 2 + 0.5) - GetFallOffValue(pos));
+
+    return float4(pos, (noiseSum / amplitudeSum / 2 + 0.5) - GetFallOffValue(pos));
 }

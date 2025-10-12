@@ -5,14 +5,14 @@ struct SmallHash
     uint primeC;
     uint primeD;
     uint primeE;
-    
+
     uint accumulator;
 
-    uint BytesA() { return accumulator & 255;}
-    uint BytesD() { return accumulator >> 24;}
-    
-    float Floats01A() { return (float)BytesA() * (1.0 / 255.0);}
-    float Floats01D() { return (float)BytesD() * (1.0 / 255.0);}
+    uint BytesA() { return accumulator & 255; }
+    uint BytesD() { return accumulator >> 24; }
+
+    float Floats01A() { return (float)BytesA() * (1.0 / 255.0); }
+    float Floats01D() { return (float)BytesD() * (1.0 / 255.0); }
 
     SmallHash Add(SmallHash h, int v)
     {

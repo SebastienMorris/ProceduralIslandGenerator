@@ -5,18 +5,31 @@
 
 static const int numThreads = 8;
 
-struct Triangle
-{
-    float3 vertexC;
-    float3 vertexB;
-    float3 vertexA;
-    int chunkIndex;
+struct DrawVertex {
+    float3 worldPosition;
 };
 
+struct DrawTriangle {
+    DrawVertex vertices[3];
+};
 
-AppendStructuredBuffer<Triangle> triangles;
+AppendStructuredBuffer<DrawTriangle> DrawTriangles;
 
-int chunkIndex;
+
+struct IndirectArgs {
+    uint numVerticesPerInstance;
+    uint numInstances;
+    uint startVertexIndex;
+    uint startInstanceIndex;
+};
+
+RWStructuredBuffer<IndirectArgs> IndirectArgsBuffer;
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+//OLD
+////////////////////////////////////////////////////////////////////////////////////////////////
+
 float isoLevel;
 
 float3 interpolateVerts(float4 v1, float4 v2)
@@ -41,13 +54,16 @@ void March (int3 id : SV_DispatchThreadID)
 
     if(id.x == 0 && id.y == 0 && id.z == 0)
     {
-        Triangle tri;
-        tri.vertexA = float3(0,0,0);
-        tri.vertexB = float3(0,0,0);
-        tri.vertexC = float3(0,0,0);
-        tri.chunkIndex = chunkIndex;
+        DrawTriangle tri;
+        DrawVertex origin;
+        origin.worldPosition = float3(0, 0, 0);
+        tri.vertices[0] = origin;
+        tri.vertices[1] = origin;
+        tri.vertices[2] = origin;
 
-        triangles.Append(tri);
+        DrawTriangles.Append(tri);
+
+        InterlockedAdd(IndirectArgsBuffer[0].numVerticesPerInstance, 3);
     }
 
     // 8 corners of the current cube
@@ -91,12 +107,23 @@ void March (int3 id : SV_DispatchThreadID)
         int a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i+2]];
         int b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
 
-        Triangle tri;
-        tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
-        tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
-        tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
-        tri.chunkIndex = chunkIndex;
+        DrawTriangle tri;
+
+        DrawVertex vertA;
+        vertA.worldPosition = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
+
+        DrawVertex vertB;
+        vertB.worldPosition = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
+
+        DrawVertex vertC;
+        vertC.worldPosition = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
+
+        tri.vertices[0] = vertA;
+        tri.vertices[1] = vertB;
+        tri.vertices[2] = vertC;
         
-        triangles.Append(tri);
+        DrawTriangles.Append(tri);
+
+        InterlockedAdd(IndirectArgsBuffer[0].numVerticesPerInstance, 3);
     }
 }

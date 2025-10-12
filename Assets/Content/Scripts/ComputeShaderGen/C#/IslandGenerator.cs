@@ -185,7 +185,7 @@ public class IslandGenerator : MonoBehaviour
 
 	private void CreateChunkMesh(IslandChunk chunk, Triangle[] chunkTriangles)
 	{
-		/*int numTris = chunkTriangles.Length;
+		int numTris = chunkTriangles.Length;
 		
 		Mesh mesh = chunk.mesh;
 		mesh.Clear();
@@ -204,7 +204,7 @@ public class IslandGenerator : MonoBehaviour
 		mesh.vertices = vertices;
 		mesh.triangles = meshTriangles;
 
-		mesh.RecalculateNormals();*/
+		mesh.RecalculateNormals();
 	}
 
     private void ClearChunks()
@@ -219,44 +219,3 @@ public class IslandGenerator : MonoBehaviour
     }
 }
 
-public struct Triangle
-{
-#pragma warning disable 649 // disable unassigned variable warning
-	public Vector3 a;
-	public Vector3 b;
-	public Vector3 c;
-	public int chunkIndex;
-
-	public Vector3 this[int i]
-	{
-		get
-		{
-			switch (i)
-			{
-				case 0:
-					return a;
-				case 1:
-					return b;
-				default:
-					return c;
-			}
-		}
-	}
-}
-
-	
-[Serializable]
-public struct NoiseSettings
-{
-	public int seed;
-	[Min(1)] public int frequency;
-	[Range(1, 6)] public int octaves;
-
-	[Range(2, 4)] public int lacunarity;
-
-	[Range(0f, 1f)] public float persistence;
-
-	[Range(0.1f, 2f)] public float scale;
-
-	public static NoiseSettings Default => new NoiseSettings{frequency = 4, octaves = 1, lacunarity = 2, persistence = 0.5f, scale = 1f};
-}
