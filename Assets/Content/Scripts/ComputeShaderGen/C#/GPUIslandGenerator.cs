@@ -115,7 +115,7 @@ public class GPUIslandGenerator : MonoBehaviour
 		marchingCompute.SetInt("_NumSourceTriangles", nbCubes);
 
 
-		//material.SetBuffer("DrawTriangles", drawBuffer);
+		material.SetBuffer("DrawTriangles", drawBuffer);
 
 
 		marchingCompute.GetKernelThreadGroupSizes(idMarchingKernel, out uint threadGroupSize, out _, out _);
