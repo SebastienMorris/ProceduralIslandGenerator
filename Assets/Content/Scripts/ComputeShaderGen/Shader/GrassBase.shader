@@ -1,4 +1,4 @@
-Shader "Unlit/Island"
+Shader "Unlit/GrassBase"
 {
     Properties
     {
@@ -31,7 +31,7 @@ Shader "Unlit/Island"
 
             
             // Incude our logic file
-            #include "Island.hlsl"    
+            #include "GrassBase.hlsl"    
             
             // Register our functions
             #pragma vertex Vertex
