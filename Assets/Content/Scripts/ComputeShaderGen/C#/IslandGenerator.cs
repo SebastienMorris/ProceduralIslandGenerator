@@ -17,6 +17,7 @@ using static Noise;
 using Vector3 = UnityEngine.Vector3;
 using static UnityEditor.PlayerSettings;
 using float4 = Unity.Mathematics.float4;
+using Matrix4x4 = System.Numerics.Matrix4x4;
 
 public class IslandGenerator : MonoBehaviour
 {
@@ -47,17 +48,33 @@ public class IslandGenerator : MonoBehaviour
 	private List<IslandChunk> chunks = new List<IslandChunk>();
 	private List<Triangle[]> calculatedChunks = new List<Triangle[]>();
 
+	private Mesh[] GeneratedMeshes;
+
 	private bool calculateTriangles;
+	
+	private int generatedMeshIndex;
 	
 	private void Update()
     {
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
-		    print("start generation");
 		    ClearChunks();
 		    InitChunks();
 	    }
     }
+
+	private void LateUpdate()
+	{
+		if (GeneratedMeshes != null && GeneratedMeshes.Length > 0)
+		{
+			for (int i=0; i<generatedMeshIndex; i++)
+			{
+				print(i);
+				Bounds bounds = new Bounds(chunks[i].transform.position, new Vector3(chunkSize, chunkSize, chunkSize));
+				Graphics.DrawMeshInstancedProcedural(GeneratedMeshes[i], 0, meshMaterial, bounds, 1);
+			}
+		}
+	}
 
     private void OnDrawGizmos()
     {
@@ -77,6 +94,9 @@ public class IslandGenerator : MonoBehaviour
 
 	    Vector3Int numChunks = new(dimensions.x / chunkSize, dimensions.y / chunkSize, dimensions.z / chunkSize);
 	    int nbChunks = numChunks.x * numChunks.y * numChunks.z;
+	    
+	    GeneratedMeshes = new Mesh[nbChunks];
+	    generatedMeshIndex = 0;
 
 	    StartCoroutine(CreateChunksCoroutine(nbChunks));
 	    StartCoroutine(ChunkTriangleCalcCoroutine(numChunks));
@@ -187,8 +207,10 @@ public class IslandGenerator : MonoBehaviour
 	{
 		int numTris = chunkTriangles.Length;
 		
-		Mesh mesh = chunk.mesh;
-		mesh.Clear();
+		//Mesh mesh = chunk.mesh;
+		//mesh.Clear();
+		
+		Mesh mesh = new Mesh();
 
 		var vertices = new Vector3[numTris * 3];
 		var meshTriangles = new int[numTris * 3];
@@ -204,7 +226,17 @@ public class IslandGenerator : MonoBehaviour
 		mesh.vertices = vertices;
 		mesh.triangles = meshTriangles;
 
-		mesh.RecalculateNormals();
+		if (GeneratedMeshes.Length > generatedMeshIndex)
+		{
+			GeneratedMeshes[generatedMeshIndex] = mesh;
+			generatedMeshIndex++;
+		}
+
+		//mesh.RecalculateNormals();
+		
+		//UnityEngine.Matrix4x4[] worldMartixs = new UnityEngine.Matrix4x4[1];
+		//worldMartixs[0] = chunk.transform.worldToLocalMatrix;
+		//Graphics.DrawMeshInstanced(mesh, 0, meshMaterial,worldMartixs, 1);
 	}
 
     private void ClearChunks()
@@ -216,6 +248,8 @@ public class IslandGenerator : MonoBehaviour
         
         chunks.Clear();
         calculatedChunks.Clear();
+        GeneratedMeshes = null;
+        generatedMeshIndex = 0;
     }
 }
 

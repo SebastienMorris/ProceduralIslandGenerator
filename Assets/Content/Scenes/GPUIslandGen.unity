@@ -305,7 +305,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   marchingCompute: {fileID: 7200000, guid: df30024f52c6b574386fdbf257deb10c, type: 3}
-  material: {fileID: 2100000, guid: edc6106c915984de2b613a68e4945671, type: 2}
+  material: {fileID: 2100000, guid: 7a8a65b63bda3f141a84e3d7f0553710, type: 2}
   dimensions: {x: 80, y: 20, z: 80}
   noiseSettings:
     seed: 0
