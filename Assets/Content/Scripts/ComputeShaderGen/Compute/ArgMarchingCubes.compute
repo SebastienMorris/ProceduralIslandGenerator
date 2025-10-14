@@ -16,20 +16,6 @@ struct DrawTriangle {
 AppendStructuredBuffer<DrawTriangle> DrawTriangles;
 
 
-struct IndirectArgs {
-    uint numVerticesPerInstance;
-    uint numInstances;
-    uint startVertexIndex;
-    uint startInstanceIndex;
-};
-
-RWStructuredBuffer<IndirectArgs> IndirectArgsBuffer;
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-//OLD
-////////////////////////////////////////////////////////////////////////////////////////////////
-
 float isoLevel;
 
 float3 interpolateVerts(float4 v1, float4 v2)
@@ -62,8 +48,6 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertices[2] = origin;
 
         DrawTriangles.Append(tri);
-
-        InterlockedAdd(IndirectArgsBuffer[0].numVerticesPerInstance, 3);
     }
 
     // 8 corners of the current cube
@@ -123,7 +107,5 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertices[2] = vertC;
         
         DrawTriangles.Append(tri);
-
-        InterlockedAdd(IndirectArgsBuffer[0].numVerticesPerInstance, 3);
     }
 }

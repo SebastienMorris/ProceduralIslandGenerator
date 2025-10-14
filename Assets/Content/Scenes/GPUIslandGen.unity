@@ -286,7 +286,7 @@ Transform:
   m_GameObject: {fileID: 785088673}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -71.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -305,15 +305,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   marchingCompute: {fileID: 7200000, guid: df30024f52c6b574386fdbf257deb10c, type: 3}
-  material: {fileID: 2100000, guid: 7a8a65b63bda3f141a84e3d7f0553710, type: 2}
-  dimensions: {x: 80, y: 20, z: 80}
+  material: {fileID: 2100000, guid: 7c917239ee790461b8b46b53c2ffd0d2, type: 2}
+  dimensions: {x: 80, y: 40, z: 80}
   noiseSettings:
     seed: 0
     frequency: 2
     octaves: 1
     lacunarity: 2
     persistence: 0.5
-    scale: 0.5
+    scale: 0.3
     applyFallOffMap: 1
     steepness: 2
     centerSize: 10

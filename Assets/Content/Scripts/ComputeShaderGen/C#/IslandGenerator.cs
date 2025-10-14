@@ -53,14 +53,21 @@ public class IslandGenerator : MonoBehaviour
 	private bool calculateTriangles;
 	
 	private int generatedMeshIndex;
-	
+
+	bool simulate = false;
+
 	private void Update()
     {
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
-		    ClearChunks();
-		    InitChunks();
+			simulate = !simulate;
 	    }
+
+		if(simulate)
+		{
+            ClearChunks();
+            InitChunks();
+        }
     }
 
 	private void LateUpdate()
@@ -69,14 +76,14 @@ public class IslandGenerator : MonoBehaviour
 		{
 			for (int i=0; i<generatedMeshIndex; i++)
 			{
-				print(i);
 				Bounds bounds = new Bounds(chunks[i].transform.position, new Vector3(chunkSize, chunkSize, chunkSize));
 				Graphics.DrawMeshInstancedProcedural(GeneratedMeshes[i], 0, meshMaterial, bounds, 1);
 			}
 		}
 	}
 
-    private void OnDrawGizmos()
+
+	private void OnDrawGizmos()
     {
         if (debug)
         {
@@ -98,7 +105,7 @@ public class IslandGenerator : MonoBehaviour
 	    GeneratedMeshes = new Mesh[nbChunks];
 	    generatedMeshIndex = 0;
 
-	    StartCoroutine(CreateChunksCoroutine(nbChunks));
+	    //StartCoroutine(CreateChunksCoroutine(nbChunks));
 	    StartCoroutine(ChunkTriangleCalcCoroutine(numChunks));
     }
 
@@ -118,26 +125,37 @@ public class IslandGenerator : MonoBehaviour
 				    chunks.Add(chunk); 
 				    CalculateChunkTriangles(chunk, chunkIndex); 
 				    chunkIndex++; 
-				    spawnedChunksThisFrame++; 
+				    /*spawnedChunksThisFrame++; 
 				    if (spawnedChunksThisFrame >= numChunksSpawnedPerFrame)
 				    {
 					    spawnedChunksThisFrame = 0;
 					    yield return new WaitForEndOfFrame();
 					    
-				    }
+				    }*/
 			    }
 		    }
 	    }
-	    
-	    triangleBuffer.Release();
+
+        int nbCalculatedChunks = calculatedChunks.Count;
+        for (int i = 0; i < nbCalculatedChunks; i++)
+        {
+            Triangle[] chunkTriangles = calculatedChunks[0];
+            CreateChunkMesh(chunks[chunkTriangles[0].chunkIndex], chunkTriangles);
+            calculatedChunks.Remove(chunkTriangles);
+            //spawnedChunks++;
+        }
+
+        triangleBuffer.Release();
 	    triangleBuffer = null;
 	    triCountBuffer.Release();
 	    triCountBuffer = null;
+
+		yield return null;
     }
     
     private IEnumerator CreateChunksCoroutine(int nbChunks)
     {
-	    int spawnedChunks = 0;
+	   /* int spawnedChunks = 0;
 	    while (spawnedChunks < nbChunks)
 	    {
 		    int nbCalculatedChunks = calculatedChunks.Count;
@@ -149,7 +167,17 @@ public class IslandGenerator : MonoBehaviour
 			    spawnedChunks++;
 		    }
 		    yield return new WaitForEndOfFrame();
-	    }
+	    }*/
+
+        int nbCalculatedChunks = calculatedChunks.Count;
+        for (int i = 0; i < nbCalculatedChunks; i++)
+        {
+            Triangle[] chunkTriangles = calculatedChunks[0];
+            CreateChunkMesh(chunks[chunkTriangles[0].chunkIndex], chunkTriangles);
+            calculatedChunks.Remove(chunkTriangles);
+            //spawnedChunks++;
+        }
+		yield return null;
     }
     
     IslandChunk CreateChunk(Vector3Int coord)
@@ -250,6 +278,31 @@ public class IslandGenerator : MonoBehaviour
         calculatedChunks.Clear();
         GeneratedMeshes = null;
         generatedMeshIndex = 0;
+    }
+}
+
+public struct Triangle
+{
+#pragma warning disable 649 // disable unassigned variable warning
+    public Vector3 a;
+    public Vector3 b;
+    public Vector3 c;
+    public int chunkIndex;
+
+    public Vector3 this[int i]
+    {
+        get
+        {
+            switch (i)
+            {
+                case 0:
+                    return a;
+                case 1:
+                    return b;
+                default:
+                    return c;
+            }
+        }
     }
 }
 

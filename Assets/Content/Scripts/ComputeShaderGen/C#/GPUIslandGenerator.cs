@@ -17,40 +17,27 @@ using static Noise;
 using Vector3 = UnityEngine.Vector3;
 using static UnityEditor.PlayerSettings;
 using float4 = Unity.Mathematics.float4;
-using System.Diagnostics;
 
 public class GPUIslandGenerator : MonoBehaviour
 {
-	//[SerializeField] private Mesh sourceMesh;
-
 	[SerializeField] private ComputeShader marchingCompute;
 
 	[SerializeField] private Material material;
 
-	/*[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-	private struct SourceVertex
-	{
-		public Vector3 position;
-	}*/
-
 	private bool initialized;
 
-	//private ComputeBuffer sourceVertBuffer;
-	//private ComputeBuffer sourceTriBuffer;
 
 	private ComputeBuffer drawBuffer;
-	private ComputeBuffer argsBuffer;
+
+    private ComputeBuffer triCountBuffer;
+    private DrawTriangle[] drawTriangles;
+    private Mesh generatedMesh;
+
 
 	private int idMarchingKernel;
 
-	private Bounds localBounds;
-
 
 	private const int DRAW_STRIDE = sizeof(float) * 3 * 3;
-	private const int INDIRECT_ARGS_STRIDE = sizeof(int) * 4;
-
-	private int[] argsBufferReset = new int[] { 0, 1, 0, 0 };
-
 
 
     [SerializeField] private Vector3Int dimensions;
@@ -65,63 +52,8 @@ public class GPUIslandGenerator : MonoBehaviour
 
     private void OnEnable()
 	{
-		UnityEngine.Debug.Assert(marchingCompute != null, "The marching compute shader is null", gameObject);
-        UnityEngine.Debug.Assert(material != null, "The material is null", gameObject);
+		Initialize();
 
-		if(initialized)
-		{
-			OnDisable();
-		}
-
-		initialized = true;
-
-
-		//Vector3[] positions = sourceMesh.vertices;
-		//int[] tris = sourceMesh.triangles;
-
-		/*SourceVertex[] vertices = new SourceVertex[positions.Length];
-		for(int i=0; i < vertices.Length; i++)
-		{
-			vertices[i] = new SourceVertex() { position = positions[i] };
-		}*/
-
-		//int numSourceTriangles = tris.Length / 3;
-
-		//sourceVertBuffer = new ComputeBuffer(vertices.Length, SOURCE_VERT_STRIDE, ComputeBufferType.Structured, ComputeBufferMode.Immutable);
-		//sourceVertBuffer.SetData(vertices);
-		//sourceTriBuffer = new ComputeBuffer(tris.Length, SOURCE_TRI_STRIDE, ComputeBufferType.Structured, ComputeBufferMode.Immutable);
-		//sourceTriBuffer.SetData(tris);
-
-		int nbCubes = dimensions.x * dimensions.y * dimensions.z;
-		int nbTriangles = nbCubes * 5;
-
-
-		drawBuffer = new ComputeBuffer(nbTriangles, DRAW_STRIDE, ComputeBufferType.Append);
-		drawBuffer.SetCounterValue(0);
-
-		argsBuffer = new ComputeBuffer(1, INDIRECT_ARGS_STRIDE, ComputeBufferType.IndirectArguments);
-
-	
-		idMarchingKernel = marchingCompute.FindKernel("March");
-
-
-		//marchingCompute.SetBuffer(idMarchingKernel, "SourceVertices", sourceVertBuffer);
-		//marchingCompute.SetBuffer(idMarchingKernel, "SourceTriangles", sourceTriBuffer);
-
-		marchingCompute.SetBuffer(idMarchingKernel, "DrawTriangles", drawBuffer);
-
-		marchingCompute.SetBuffer(idMarchingKernel, "IndirectArgsBuffer", argsBuffer);
-
-		marchingCompute.SetInt("_NumSourceTriangles", nbCubes);
-
-
-		material.SetBuffer("DrawTriangles", drawBuffer);
-
-
-		marchingCompute.GetKernelThreadGroupSizes(idMarchingKernel, out uint threadGroupSize, out _, out _);
-
-		localBounds = new Bounds(transform.position, dimensions);
-		localBounds.Expand(1);
 	}
 
 	private void OnDisable()
@@ -129,7 +61,7 @@ public class GPUIslandGenerator : MonoBehaviour
 		if(initialized)
 		{
 			drawBuffer.Release();
-			argsBuffer.Release();
+            triCountBuffer.Release();
 		}
 
 		initialized = false;
@@ -142,24 +74,95 @@ public class GPUIslandGenerator : MonoBehaviour
 			OnDisable();
 			OnEnable();
 		}
-		 
-		drawBuffer.SetCounterValue(0);
-		argsBuffer.SetData(argsBufferReset);
 
-		//Transform bounds to world space
-		//Bounds bounds = TransformBounds(localBounds);
+        CalculateTriangles();
 
-		marchingCompute.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
-
-		SetComputeSettings();
-
-		marchingCompute.Dispatch(idMarchingKernel, dimensions.x, dimensions.y, dimensions.z);
-
-		Graphics.DrawProceduralIndirect(material, localBounds, MeshTopology.Triangles, argsBuffer, 0, null, null, ShadowCastingMode.On, true, gameObject.layer); 
+        if (generatedMesh != null)
+        { 
+            Bounds bounds = new Bounds(transform.position, dimensions);
+            Graphics.DrawMeshInstancedProcedural(generatedMesh, 0, material, bounds, 1);
+        }
 	}
+
+	private void Initialize()
+	{
+        if (initialized)
+        {
+			Debug.Log("Already Initialised", this.gameObject);
+            OnDisable();
+        }
+
+        initialized = true;
+
+        int nbCubes = dimensions.x * dimensions.y * dimensions.z;
+        int nbTriangles = nbCubes * 5;
+
+
+        drawBuffer = new ComputeBuffer(nbTriangles, DRAW_STRIDE, ComputeBufferType.Append);
+        drawBuffer.SetCounterValue(0);
+        triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
+
+
+        idMarchingKernel = marchingCompute.FindKernel("March");
+
+        marchingCompute.SetBuffer(idMarchingKernel, "DrawTriangles", drawBuffer);
+
+		drawTriangles = new DrawTriangle[nbTriangles];
+
+        generatedMesh = new Mesh();
+    }
+
+	private void CalculateTriangles()
+	{
+        drawBuffer.SetCounterValue(0);
+        triCountBuffer.SetCounterValue(0);
+
+        SetComputeSettings();
+
+        marchingCompute.Dispatch(idMarchingKernel, 8, 8, 8);
+
+
+        ComputeBuffer.CopyCount(drawBuffer, triCountBuffer, 0);
+        int[] triCountArray = { 0 };
+        triCountBuffer.GetData(triCountArray);
+        int numTris = triCountArray[0];
+
+        print(numTris + " / " + drawBuffer.count);
+
+
+        drawBuffer.GetData(drawTriangles, 0, 0, numTris);
+
+        //drawBuffer.GetData(drawTriangles);
+
+        GenerateMesh();
+    }
+
+	private void GenerateMesh()
+	{
+        generatedMesh.Clear();
+
+        int numTris = drawTriangles.Length;
+
+        var vertices = new Vector3[numTris * 3];
+        var triangles = new int[numTris * 3];
+
+        for (int i = 0; i < numTris; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                triangles[i * 3 + j] = i * 3 + j;
+                vertices[i * 3 + j] = drawTriangles[i][j];
+            }
+        }
+
+        generatedMesh.vertices = vertices;
+        generatedMesh.triangles = triangles;
+    }
 
 	private void SetComputeSettings()
 	{
+        marchingCompute.SetBuffer(0, "DrawTriangles", drawBuffer);
+
         marchingCompute.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
         marchingCompute.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
         marchingCompute.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
@@ -181,29 +184,28 @@ public class GPUIslandGenerator : MonoBehaviour
     }
 }
 
-public struct Triangle
+public struct DrawTriangle
 {
 #pragma warning disable 649 // disable unassigned variable warning
-	public Vector3 a;
-	public Vector3 b;
-	public Vector3 c;
-	public int chunkIndex;
+    public Vector3 a;
+    public Vector3 b;
+    public Vector3 c;
 
-	public Vector3 this[int i]
-	{
-		get
-		{
-			switch (i)
-			{
-				case 0:
-					return a;
-				case 1:
-					return b;
-				default:
-					return c;
-			}
-		}
-	}
+    public Vector3 this[int i]
+    {
+        get
+        {
+            switch (i)
+            {
+                case 0:
+                    return a;
+                case 1:
+                    return b;
+                default:
+                    return c;
+            }
+        }
+    }
 }
 
 	
