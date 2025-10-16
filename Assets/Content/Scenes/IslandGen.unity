@@ -292,9 +292,9 @@ MonoBehaviour:
   debug: 1
   marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
   meshMaterial: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
-  numChunksSpawnedPerFrame: 10
+  numChunksSpawnedPerFrame: 216
   numThreadsPerAxis: 8
-  dimensions: {x: 80, y: 40, z: 80}
+  dimensions: {x: 60, y: 60, z: 60}
   chunkSize: 10
   surfaceLevel: 0.5
   noiseSettings:
@@ -307,9 +307,6 @@ MonoBehaviour:
     applyFallOffMap: 1
     steepness: 2
     centerSize: 10
-  applyFallOffMap: 1
-  steepness: 2
-  centerSize: 10
 --- !u!4 &785088675
 Transform:
   m_ObjectHideFlags: 0

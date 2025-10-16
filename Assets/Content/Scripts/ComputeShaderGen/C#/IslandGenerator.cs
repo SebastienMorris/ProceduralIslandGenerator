@@ -35,11 +35,6 @@ public class IslandGenerator : MonoBehaviour
     [SerializeField] [Range(0, 1)] private float surfaceLevel = 0.5f;
 
     [SerializeField] private NoiseSettings noiseSettings = NoiseSettings.Default;
-
-    [SerializeField] private bool applyFallOffMap;
-    [SerializeField][Range(0.1f, 10)] private float steepness = 2f;
-    [SerializeField][Range(0.1f, 10)] private float centerSize = 10f;
-    
     
 	private ComputeBuffer triangleBuffer;
 	private ComputeBuffer triCountBuffer;
@@ -105,8 +100,8 @@ public class IslandGenerator : MonoBehaviour
 	    GeneratedMeshes = new Mesh[nbChunks];
 	    generatedMeshIndex = 0;
 
-	    //StartCoroutine(CreateChunksCoroutine(nbChunks));
 	    StartCoroutine(ChunkTriangleCalcCoroutine(numChunks));
+        StartCoroutine(CreateChunksCoroutine(nbChunks));
     }
 
     private IEnumerator ChunkTriangleCalcCoroutine(Vector3Int numChunks)
@@ -125,25 +120,16 @@ public class IslandGenerator : MonoBehaviour
 				    chunks.Add(chunk); 
 				    CalculateChunkTriangles(chunk, chunkIndex); 
 				    chunkIndex++; 
-				    /*spawnedChunksThisFrame++; 
+				    spawnedChunksThisFrame++; 
 				    if (spawnedChunksThisFrame >= numChunksSpawnedPerFrame)
 				    {
 					    spawnedChunksThisFrame = 0;
 					    yield return new WaitForEndOfFrame();
 					    
-				    }*/
+				    }
 			    }
 		    }
 	    }
-
-        int nbCalculatedChunks = calculatedChunks.Count;
-        for (int i = 0; i < nbCalculatedChunks; i++)
-        {
-            Triangle[] chunkTriangles = calculatedChunks[0];
-            CreateChunkMesh(chunks[chunkTriangles[0].chunkIndex], chunkTriangles);
-            calculatedChunks.Remove(chunkTriangles);
-            //spawnedChunks++;
-        }
 
         triangleBuffer.Release();
 	    triangleBuffer = null;
@@ -155,7 +141,7 @@ public class IslandGenerator : MonoBehaviour
     
     private IEnumerator CreateChunksCoroutine(int nbChunks)
     {
-	   /* int spawnedChunks = 0;
+	    int spawnedChunks = 0;
 	    while (spawnedChunks < nbChunks)
 	    {
 		    int nbCalculatedChunks = calculatedChunks.Count;
@@ -167,16 +153,16 @@ public class IslandGenerator : MonoBehaviour
 			    spawnedChunks++;
 		    }
 		    yield return new WaitForEndOfFrame();
-	    }*/
+	    }
 
-        int nbCalculatedChunks = calculatedChunks.Count;
+        /*int nbCalculatedChunks = calculatedChunks.Count;
         for (int i = 0; i < nbCalculatedChunks; i++)
         {
             Triangle[] chunkTriangles = calculatedChunks[0];
             CreateChunkMesh(chunks[chunkTriangles[0].chunkIndex], chunkTriangles);
             calculatedChunks.Remove(chunkTriangles);
             //spawnedChunks++;
-        }
+        }*/
 		yield return null;
     }
     
@@ -202,9 +188,9 @@ public class IslandGenerator : MonoBehaviour
 	    
 		marchingCubesShader.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale);
 	    
-		marchingCubesShader.SetFloat(Shader.PropertyToID("steepness"), steepness);
-		marchingCubesShader.SetFloat(Shader.PropertyToID("centerSize"), centerSize);
-		marchingCubesShader.SetBool(Shader.PropertyToID("applyFallOff"), applyFallOffMap);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("steepness"), noiseSettings.steepness);
+		marchingCubesShader.SetFloat(Shader.PropertyToID("centerSize"), noiseSettings.centerSize);
+		marchingCubesShader.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOffMap);
 		
 		marchingCubesShader.SetVector(Shader.PropertyToID("dimensions"), float4(chunkSize, chunkSize, chunkSize, 0f));
 		marchingCubesShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
