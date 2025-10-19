@@ -23,7 +23,7 @@ public class IslandGenerator : MonoBehaviour
     
 	private ComputeBuffer triangleBuffer;
 	private ComputeBuffer triCountBuffer;
-	private Chunk[] chunks;
+	private Chunk[] chunks; 
 
 	bool simulate = false;
 
@@ -38,38 +38,24 @@ public class IslandGenerator : MonoBehaviour
 	
 	private void OnEnable()
 	{
-		void SetupBuffers()
-		{
-			int numVoxels = chunkSize * chunkSize * chunkSize;
-			int maxTriangleCount = numVoxels * 5;
-	    
-			triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
-			triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
-
-			Vector3Int numChunks = dimensions / chunkSize;
-			int nbChunks = numChunks.x * numChunks.y * numChunks.z;
-	    
-			chunks = new Chunk[nbChunks];
-		}
+		SetupBuffers();
 	}
 
 	private void OnDisable()
 	{
-		
-	}
+		StopCalculation();
+        ClearBuffers();
+    }
 
 	private void Update()
     {
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
 			simulate = !simulate;
-	    }
 
-		if(simulate)
-		{
-			ClearChunks();
-			Calculate();
-        }
+			if(simulate) { StartCalculation(); } 
+			else { StopCalculation(); }
+	    }
     }
 
 	private void LateUpdate()
@@ -87,12 +73,8 @@ public class IslandGenerator : MonoBehaviour
 		}
 	}
 
-    void Calculate()
-    {
-	    StartCoroutine(CalculateCoroutine(dimensions / chunkSize));
-    }
-
-    void SetupBuffers()
+   
+    private void SetupBuffers()
     {
 	    int numVoxels = chunkSize * chunkSize * chunkSize;
 	    int maxTriangleCount = numVoxels * 5;
@@ -104,26 +86,63 @@ public class IslandGenerator : MonoBehaviour
 	    int nbChunks = numChunks.x * numChunks.y * numChunks.z;
 	    
 	    chunks = new Chunk[nbChunks];
+
+        marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
+    }
+   
+    private void ClearBuffers()
+    {
+        triangleBuffer.Release();
+        triCountBuffer.Release();
+		chunks = null;
+    }
+
+	private void ResetBuffers()
+	{
+		triangleBuffer.SetCounterValue(0);
+		triCountBuffer.SetCounterValue(0);
+	}
+
+	private void ResetChunks()
+	{
+        Array.Clear(chunks, 0, chunks.Length);
+    }
+
+    private void StartCalculation()
+    {
+        StartCoroutine(CalculateCoroutine(dimensions / chunkSize));
+    }
+
+    private void StopCalculation()
+    {
+        StopCoroutine(CalculateCoroutine(Vector3Int.zero));
+		ResetBuffers();
+		ResetChunks();
     }
 
     private IEnumerator CalculateCoroutine(Vector3Int numChunks)
     {
-	    int chunkIndex = 0;
-	    for (int x = 0; x < numChunks.x; x++)
-	    {
-		    for (int y = 0; y < numChunks.y; y++)
-		    { 
-			    for (int z = 0; z < numChunks.z; z++) 
-			    { 
-				    Vector3Int coord = new Vector3Int(x, y, z); 
-				    
-				    var chunk = CreateChunk(coord); 
-				    chunks[chunkIndex] = chunk; 
-				    CreateChunkMesh(chunk, CalculateChunkTriangles(chunk));
-				    chunkIndex++; 
-			    }
-		    }
-	    }
+		while (simulate)
+		{
+			int chunkIndex = 0;
+			for (int x = 0; x < numChunks.x; x++)
+			{
+				for (int y = 0; y < numChunks.y; y++)
+				{
+					for (int z = 0; z < numChunks.z; z++)
+					{
+						Vector3Int coord = new Vector3Int(x, y, z);
+
+						var chunk = CreateChunk(coord);
+						chunks[chunkIndex] = chunk;
+						CreateChunkMesh(chunk, CalculateChunkTriangles(chunk));
+						chunkIndex++;
+					}
+				}
+			}
+			yield return new WaitForEndOfFrame();
+		}
+
 		yield return null;
     }
     
@@ -136,7 +155,7 @@ public class IslandGenerator : MonoBehaviour
 
 	private Triangle[] CalculateChunkTriangles(Chunk chunk)
 	{
-		triangleBuffer.SetCounterValue(0);
+		ResetBuffers();
 		
 		SetComputeParams(chunk);
 		
@@ -192,22 +211,8 @@ public class IslandGenerator : MonoBehaviour
 		marchingCubesShader.SetVector(Shader.PropertyToID("globalPos"), float4(chunk.position, 0f));
 		marchingCubesShader.SetVector(Shader.PropertyToID("localPos"), float4(chunk.localPosition, 0f));
 		
-		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
-		
 		marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
 	}
-
-	private void StopCalculation()
-	{
-		StopCoroutine(CalculateCoroutine(Vector3Int.zero));
-	}
-
-    private void ClearChunks()
-    {
-	    triangleBuffer.Release();
-	    triCountBuffer.Release();
-        chunks = null;
-    }
 }
 
 [Serializable]

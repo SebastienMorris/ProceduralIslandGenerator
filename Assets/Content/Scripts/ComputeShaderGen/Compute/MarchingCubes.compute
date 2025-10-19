@@ -1,9 +1,9 @@
-﻿#pragma kernel March
+﻿//#pragma kernel March
 
 #include "MarchTables.compute"
 #include "NoiseCompute.compute"
 
-static const int numThreads = 8;
+//static const int numThreads = 8;
 
 struct Triangle
 {
@@ -28,8 +28,9 @@ int indexFromCoord(int x, int y, int z)
     return z * (dimensions.x + 1) * (dimensions.y + 1) + y * (dimensions.z + 1) + x;
 }
 
-[numthreads(numThreads,numThreads,numThreads)]
-void March (int3 id : SV_DispatchThreadID)
+//[numthreads(numThreads,numThreads,numThreads)]
+//void March (int3 id : SV_DispatchThreadID)
+void CalculateTriangle(int3 coord)
 {   
     // Stop one point before the end because voxel includes neighbouring points
     if (id.x >= dimensions.x || id.y >= dimensions.y || id.z >= dimensions.z) 
