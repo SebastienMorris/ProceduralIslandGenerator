@@ -7,7 +7,7 @@ static const int numThreads = 8;
 struct DrawMesh
 {
     float3 vertices[];
-    float3 triangles[];
+    int3 triangles[];
 };
 
 struct  DrawChunk
@@ -20,7 +20,7 @@ struct  DrawChunk
 
 AppendStructuredBuffer<DrawChunk> DrawChunks;
 
-float3 worldOrigin;
+float4 worldOrigin;
 
 
 DrawChunk CreateChunk(int3 coord)
