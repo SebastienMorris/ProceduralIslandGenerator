@@ -1,0 +1,100 @@
+﻿#include "MarchTables.compute"
+#include "NoiseCompute.compute"
+
+
+struct Triangle
+{
+    float3 vertices[];
+};
+
+float isoLevel;
+int maxTriangles;
+
+float3 interpolateVerts(float4 v1, float4 v2)
+{
+    float t = (isoLevel - v1.w) / (v2.w - v1.w);
+    return v1.xyz + t * (v2.xyz - v1.xyz);
+}
+
+int indexFromCoord(int x, int y, int z)
+{
+    return z * (dimensions.x + 1) * (dimensions.y + 1) + y * (dimensions.z + 1) + x;
+}
+
+void CalculateTriangle(out Triangle triangles[], int3 coord, float3 globalPos, float3 localPos)
+{
+    if (coord.x * coord.y * coord.z >= maxTriangles) { return; }
+
+    if (coord.x == 0 && coord.y == 0 && coord.z == 0)
+    {
+        Triangle tri;
+        tri.vertices[0] = float3(0, 0, 0);
+        tri.vertices[1] = float3(0, 0, 0);
+        tri.vertices[2] = float3(0, 0, 0);
+
+        triangles[indexFromCoord(coord.x, coord.y, coord.z)] = tri;
+    }
+
+    // 8 corners of the current cube
+    float4 cubeCorners[8] =
+    {
+        GenerateNoise(coord, globalPos, localPos),
+        GenerateNoise(int3(coord.x + 1, coord.y, coord.z), globalPos, localPos),
+        GenerateNoise(int3(coord.x + 1, coord.y, coord.z + 1), globalPos, localPos),
+        GenerateNoise(int3(coord.x, coord.y, coord.z + 1), globalPos, localPos),
+        GenerateNoise(int3(coord.x, coord.y + 1, coord.z), globalPos, localPos),
+        GenerateNoise(int3(coord.x + 1, coord.y + 1, coord.z), globalPos, localPos),
+        GenerateNoise(int3(coord.x + 1, coord.y + 1, coord.z + 1), globalPos, localPos),
+        GenerateNoise(int3(coord.x, coord.y + 1, coord.z + 1), globalPos, localPos)
+    };
+
+    // Calculate unique index for each cube configuration.
+    // There are 256 possible values
+    // A value of 0 means cube is entirely inside surface; 255 entirely outside.
+    // The value is used to look up the edge table, which indicates which edges of the cube are cut by the isosurface.
+    int cubeIndex = 0;
+    if (cubeCorners[0].w < isoLevel) cubeIndex |= 1;
+    if (cubeCorners[1].w < isoLevel) cubeIndex |= 2;
+    if (cubeCorners[2].w < isoLevel) cubeIndex |= 4;
+    if (cubeCorners[3].w < isoLevel) cubeIndex |= 8;
+    if (cubeCorners[4].w < isoLevel) cubeIndex |= 16;
+    if (cubeCorners[5].w < isoLevel) cubeIndex |= 32;
+    if (cubeCorners[6].w < isoLevel) cubeIndex |= 64;
+    if (cubeCorners[7].w < isoLevel) cubeIndex |= 128;
+
+    // Create triangles for current cube configuration
+    for (int i = 0; triangulation[cubeIndex][i] != -1; i += 3)
+    {
+        // Get indices of corner points A and B for each of the three edges
+        // of the cube that need to be joined to form the triangle.
+        int a0 = cornerIndexAFromEdge[triangulation[cubeIndex][i]];
+        int b0 = cornerIndexBFromEdge[triangulation[cubeIndex][i]];
+
+        int a1 = cornerIndexAFromEdge[triangulation[cubeIndex][i + 1]];
+        int b1 = cornerIndexBFromEdge[triangulation[cubeIndex][i + 1]];
+
+        int a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i + 2]];
+        int b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i + 2]];
+
+        Triangle tri;
+        tri.vertices[0] = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
+        tri.vertices[1] = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
+        tri.vertices[2] = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
+
+        triangles[indexFromCoord(coord.x, coord.y, coord.z)] = tri;
+    }
+}
+
+void GetChunkTriangles(out Triangle triangles[], float3 globalPos, float3 localPos)
+{
+    for (int x = 0; x < 10; x++)
+    {
+        for (int y = 0; y < 10; y++)
+        {
+            for (int z = 0; z < 10; z++)
+            {
+                CalculateTriangle(triangles, int3(x, y, z), globalPos, localPos);
+            }
+        }
+    }
+}

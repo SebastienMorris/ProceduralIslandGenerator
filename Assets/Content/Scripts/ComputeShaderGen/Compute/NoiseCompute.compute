@@ -12,10 +12,9 @@ float steepness;
 float centerSize;
 bool applyFallOff;
 
-float4 dimensions;
 float4 globalDimensions;
-float4 globalPos;
-float4 localPos;
+//float4 globalPos;
+//float4 localPos;
 
 struct LatticeSpan
 {
@@ -29,7 +28,7 @@ float FallOffEvaluate(float value)
     return pow(abs(value), steepness) / (pow(abs(value), steepness) + pow(abs(centerSize - centerSize * value), steepness));
 }
 
-float GetFallOffValue(float3 pos)
+float GetFallOffValue(float3 pos, float3 localPos)
 {
     if (!applyFallOff)
         return 0.0;
@@ -46,12 +45,12 @@ float GetFallOffValue(float3 pos)
 
 float3 GetPosition(int3 index)
 {
-    return float3(index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
+    return float3(index.x - 10 / 2, index.y - 10 / 2, index.z - 10 / 2);
 }
 
-float3 GetNoisePosition(int3 index)
+float3 GetNoisePosition(int3 index, float3 globalPos)
 {
-    return float3((globalPos.x + index.x) / dimensions.x, (globalPos.y + index.y) / dimensions.y, (globalPos.z + index.z) / dimensions.z) * scale;
+    return float3((globalPos.x + index.x) / 10, (globalPos.y + index.y) / 10, (globalPos.z + index.z) / 10) * scale;
 }
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
@@ -106,7 +105,7 @@ float GetNoise(float3 noisePosition, SmallHash hash, int frequency)
     return lerp(L0, L1, x.t);
 }
 
-float4 GenerateNoise(int3 id)
+float4 GenerateNoise(int3 id, float3 globalPos, float3 localPos)
 {
     SmallHash hash;
     hash.primeA = 0x9E3779B1;
@@ -121,7 +120,7 @@ float4 GenerateNoise(int3 id)
     float amplitudeSum = 0.0;
     float noiseSum = 0.0;
 
-    float3 noisePos = GetNoisePosition(id);
+    float3 noisePos = GetNoisePosition(id, globalPos);
     float3 pos = GetPosition(id);
 
     for (int j = 0; j < octaves; j++)
@@ -132,5 +131,5 @@ float4 GenerateNoise(int3 id)
         amplitude *= persistence;
     }
 
-    return float4(pos, (noiseSum / amplitudeSum / 2 + 0.5) - GetFallOffValue(pos));
+    return float4(pos, (noiseSum / amplitudeSum / 2 + 0.5) - GetFallOffValue(pos, localPos));
 }

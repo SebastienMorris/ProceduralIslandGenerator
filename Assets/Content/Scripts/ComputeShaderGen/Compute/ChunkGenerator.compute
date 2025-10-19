@@ -1,7 +1,8 @@
-#include "MarchingCubes.compute"
-
-// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel GenerateChunks
+
+#include "ChunkMarchingCubes.compute"
+
+static const int numThreads = 8;
 
 struct DrawMesh
 {
@@ -17,20 +18,47 @@ struct  DrawChunk
     DrawMesh mesh;
 };
 
+AppendStructuredBuffer<DrawChunk> DrawChunks;
+
 float3 worldOrigin;
 
 
 DrawChunk CreateChunk(int3 coord)
 {
     DrawChunk chunk;
-    chunk.localPosition = float3(coord.x * 10 - (dimensions.x / 2 - 10 / 2), coord.y * 10 - (dimensions.y / 2 - 10 / 2), coord.z * 10 - (dimensions.z / 2 - 10 / 2));
+    chunk.localPosition = float3(coord.x * 10 - (globalDimensions.x / 2 - 10 / 2), coord.y * 10 - (globalDimensions.y / 2 - 10 / 2), coord.z * 10 - (globalDimensions.z / 2 - 10 / 2));
     chunk.position = worldOrigin + chunk.localPosition;
     
     return chunk;
 }
 
-[numthreads(8,8,8)]
+void CreateChunkMesh(out DrawChunk chunk, Triangle triangles[])
+{
+    float3 vertices[maxTriangles * 3];
+    int meshTriangles [maxTriangles * 3];
+
+    for (int i = 0; i < maxTriangles; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            meshTriangles[i * 3 + j] = i * 3 + j;
+            vertices[i * 3 + j] = triangles[i].vertices[j];
+        }
+    }
+    chunk.mesh.vertices = {vertices};
+    chunk.mesh.triangles = {meshTriangles};
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
 void GenerateChunks (uint3 id : SV_DispatchThreadID)
 {
-    
+    const DrawChunk chunk = CreateChunk(id);
+
+    Triangle triangles[maxTriangles];
+
+    GetChunkTriangles(triangles, chunk.position, chunk.localPosition);
+
+    CreateChunkMesh(chunk, triangles);
+
+    DrawChunks.Append(chunk);
 }
