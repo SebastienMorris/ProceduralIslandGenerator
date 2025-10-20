@@ -10,13 +10,11 @@ struct Triangle
     float3 vertexC;
     float3 vertexB;
     float3 vertexA;
-    int chunkIndex;
 };
 
 
 AppendStructuredBuffer<Triangle> triangles;
 
-int chunkIndex;
 float isoLevel;
 
 float3 interpolateVerts(float4 v1, float4 v2)
@@ -45,7 +43,6 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertexA = float3(0,0,0);
         tri.vertexB = float3(0,0,0);
         tri.vertexC = float3(0,0,0);
-        tri.chunkIndex = chunkIndex;
 
         triangles.Append(tri);
     }
@@ -95,7 +92,6 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
         tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
         tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
-        tri.chunkIndex = chunkIndex;
         
         triangles.Append(tri);
     }
