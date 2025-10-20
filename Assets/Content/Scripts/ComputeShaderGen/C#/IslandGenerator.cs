@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using static Unity.Mathematics.math;
 using Vector3 = UnityEngine.Vector3;
@@ -13,9 +15,7 @@ public class IslandGenerator : MonoBehaviour
 	
 	[SerializeField] private Material meshMaterial;
 	
-	[SerializeField]private Vector3Int dimensions = new (0, 0, 0);
-	
-	private int chunkSize = 10;
+	[SerializeField] private Vector3Int dimensions = new (0, 0, 0);
 	
     [SerializeField] [Range(0, 1)] private float surfaceLevel = 0.5f;
 
@@ -25,7 +25,19 @@ public class IslandGenerator : MonoBehaviour
 	private ComputeBuffer triCountBuffer;
 	private Chunk[] chunks;
 
-	bool simulate = false;
+	private bool simulate = false;
+	private bool resetCalculation = false;
+
+	private Vector3Int lastFrameDimensions = Vector3Int.zero;
+	
+	#region CONSTANTS
+		private const int CHUNK_SIZE = 10;
+		private const int NUM_VOXELS = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+		private const int MAX_TRIANGLES = NUM_VOXELS * 5;
+		private const int CHUNK_STRIDE = sizeof(float) * 3 * 4;
+
+		private const int CHUNKS_PER_FRAME = 20;
+	#endregion
 
 	private void OnDrawGizmos()
 	{
@@ -38,24 +50,18 @@ public class IslandGenerator : MonoBehaviour
 	
 	private void OnEnable()
 	{
-		void SetupBuffers()
-		{
-			int numVoxels = chunkSize * chunkSize * chunkSize;
-			int maxTriangleCount = numVoxels * 5;
-	    
-			triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
-			triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
-
-			Vector3Int numChunks = dimensions / chunkSize;
-			int nbChunks = numChunks.x * numChunks.y * numChunks.z;
-	    
-			chunks = new Chunk[nbChunks];
-		}
+		SetupBuffers();
+		lastFrameDimensions = dimensions;
 	}
 
 	private void OnDisable()
 	{
-		
+		ClearBuffers();
+	}
+
+	private void OnValidate()
+	{
+		resetCalculation = true;
 	}
 
 	private void Update()
@@ -63,13 +69,10 @@ public class IslandGenerator : MonoBehaviour
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
 			simulate = !simulate;
+			
+			if(simulate){ StartCalculation(); } 
+			else { StopCalculation(); }
 	    }
-
-		if(simulate)
-		{
-			ClearChunks();
-			Calculate();
-        }
     }
 
 	private void LateUpdate()
@@ -78,65 +81,125 @@ public class IslandGenerator : MonoBehaviour
 		{
 			for (int i=0; i<chunks.Length; i++)
 			{
-				if (chunks[i].mesh != null)
+				if (chunks[i].meshSet)
 				{
-					Bounds bounds = new Bounds(chunks[i].position, new Vector3(chunkSize, chunkSize, chunkSize));
+					Bounds bounds = new Bounds(chunks[i].position, new Vector3(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE));
 					Graphics.DrawMeshInstancedProcedural(chunks[i].mesh, 0, meshMaterial, bounds, 1);
 				}
 			}
 		}
 	}
+	
+	
+	private void SetupBuffers()
+	{
+		triangleBuffer = new ComputeBuffer(MAX_TRIANGLES, CHUNK_STRIDE, ComputeBufferType.Append);
+		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
 
-    void Calculate()
+		Vector3Int numChunks = dimensions / CHUNK_SIZE;
+		int nbChunks = numChunks.x * numChunks.y * numChunks.z;
+	    
+		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
+		chunks = new Chunk[nbChunks];
+	}
+	
+	private void ClearBuffers()
+	{
+		triangleBuffer.Release();
+		triCountBuffer.Release();
+		chunks = null;
+	}
+
+	private void ResetBuffers()
+	{
+		triangleBuffer.SetCounterValue(0);
+		triCountBuffer.SetCounterValue(0);
+	}
+
+	private void ResetChunks()
+	{
+		Array.Clear(chunks, 0, chunks.Length);
+	}
+
+    void StartCalculation()
     {
-	    StartCoroutine(CalculateCoroutine(dimensions / chunkSize));
+	    StartCoroutine(CalculateCoroutine());
+    }
+    
+    private void StopCalculation()
+    {
+	    StopCoroutine(CalculateCoroutine());
+	    ResetBuffers();
+	    ResetChunks();
     }
 
-    void SetupBuffers()
+    private void CheckResize()
     {
-	    int numVoxels = chunkSize * chunkSize * chunkSize;
-	    int maxTriangleCount = numVoxels * 5;
-	    
-	    triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3, ComputeBufferType.Append);
-	    triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
-
-	    Vector3Int numChunks = dimensions / chunkSize;
-	    int nbChunks = numChunks.x * numChunks.y * numChunks.z;
-	    
-	    chunks = new Chunk[nbChunks];
-    }
-
-    private IEnumerator CalculateCoroutine(Vector3Int numChunks)
-    {
-	    int chunkIndex = 0;
-	    for (int x = 0; x < numChunks.x; x++)
+	    if (dimensions != lastFrameDimensions)
 	    {
-		    for (int y = 0; y < numChunks.y; y++)
-		    { 
-			    for (int z = 0; z < numChunks.z; z++) 
-			    { 
-				    Vector3Int coord = new Vector3Int(x, y, z); 
-				    
-				    var chunk = CreateChunk(coord); 
-				    chunks[chunkIndex] = chunk; 
-				    CreateChunkMesh(chunk, CalculateChunkTriangles(chunk));
-				    chunkIndex++; 
+		    ClearBuffers();
+		    SetupBuffers();
+		    lastFrameDimensions = dimensions;
+	    }
+    }
+
+    private IEnumerator CalculateCoroutine()
+    {
+	    while (simulate)
+	    {
+		    CheckResize();
+		    Vector3Int numChunks = dimensions / CHUNK_SIZE;
+		    
+		    int chunkIndex = 0;
+		    int spawnedChunksThisFrame = 0;
+		    
+		    for (int x = 0; x < numChunks.x; x++)
+		    {
+			    for (int y = 0; y < numChunks.y; y++)
+			    {
+				    for (int z = 0; z < numChunks.z; z++)
+				    {
+					    if(resetCalculation)
+					    {
+						    ResetChunks();
+						    ResetBuffers();
+						    x = numChunks.x;
+						    resetCalculation = false;
+						    break;
+					    }
+					    
+					    Vector3Int coord = new Vector3Int(x, y, z);
+
+					    var chunk = CreateChunk(coord);
+					    chunks[chunkIndex] = chunk;
+					    CreateChunkMesh(chunk, CalculateChunkTriangles(chunk));
+					    chunkIndex++;
+					    spawnedChunksThisFrame++;
+
+					    if (spawnedChunksThisFrame >= CHUNKS_PER_FRAME)
+					    {
+						    spawnedChunksThisFrame = 0;
+						    yield return new WaitForEndOfFrame();
+					    }
+				    }
 			    }
 		    }
+		    yield return new WaitForEndOfFrame();
 	    }
-		yield return null;
+
+	    yield return null;
     }
     
     Chunk CreateChunk(Vector3Int coord)
     {
-	    Vector3 localPos = new Vector3Int(coord.x * chunkSize - (dimensions.x / 2 - chunkSize / 2), coord.y * chunkSize - (dimensions.y / 2 - chunkSize / 2), coord.z * chunkSize - (dimensions.z / 2 - chunkSize / 2));
+	    Vector3 localPos = new Vector3Int(coord.x * CHUNK_SIZE - (dimensions.x / 2 - CHUNK_SIZE / 2), coord.y * CHUNK_SIZE - (dimensions.y / 2 - CHUNK_SIZE / 2), coord.z * CHUNK_SIZE - (dimensions.z / 2 - CHUNK_SIZE / 2));
 	    Vector3 pos = transform.TransformPoint(localPos);
 	    return new Chunk(pos, localPos);
     }
 
 	private Triangle[] CalculateChunkTriangles(Chunk chunk)
 	{
-		triangleBuffer.SetCounterValue(0);
+		ResetBuffers();
 		
 		SetComputeParams(chunk);
 		
@@ -160,6 +223,7 @@ public class IslandGenerator : MonoBehaviour
 
 		var vertices = new Vector3[numTris * 3];
 		var meshTriangles = new int[numTris * 3];
+		var normals = new Vector3[numTris * 3];
 
 		for (int i = 0; i < numTris; i++)
 		{
@@ -167,10 +231,12 @@ public class IslandGenerator : MonoBehaviour
 			{
 				meshTriangles[i * 3 + j] = i * 3 + j;
 				vertices[i * 3 + j] = chunkTriangles[i][j];
+				normals[i * 3 + j] = chunkTriangles[i].normal;
 			}
 		}
 		chunk.mesh.vertices = vertices;
 		chunk.mesh.triangles = meshTriangles;
+		chunk.mesh.normals = normals;
 	}
 
 	private void SetComputeParams(Chunk chunk)
@@ -187,44 +253,38 @@ public class IslandGenerator : MonoBehaviour
 		marchingCubesShader.SetFloat(Shader.PropertyToID("centerSize"), noiseSettings.centerSize);
 		marchingCubesShader.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOffMap);
 		
-		marchingCubesShader.SetVector(Shader.PropertyToID("dimensions"), float4(chunkSize, chunkSize, chunkSize, 0f));
+		marchingCubesShader.SetVector(Shader.PropertyToID("dimensions"), float4(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, 0f));
 		marchingCubesShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
 		marchingCubesShader.SetVector(Shader.PropertyToID("globalPos"), float4(chunk.position, 0f));
 		marchingCubesShader.SetVector(Shader.PropertyToID("localPos"), float4(chunk.localPosition, 0f));
 		
-		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
-		
 		marchingCubesShader.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
 	}
-
-	private void StopCalculation()
-	{
-		StopCoroutine(CalculateCoroutine(Vector3Int.zero));
-	}
-
-    private void ClearChunks()
-    {
-	    triangleBuffer.Release();
-	    triCountBuffer.Release();
-        chunks = null;
-    }
 }
 
-[Serializable]
 public struct Chunk
 {
 	public Vector3 position;
 	public Vector3 localPosition;
 	public Mesh mesh;
+	public bool meshSet;
 
 	public Chunk(Vector3 position, Vector3 localPosition)
 	{
 		this.position = position;
 		this.localPosition = localPosition;
 		this.mesh = new Mesh();
+		meshSet = true;
 	}
 
-	public Chunk(Vector3 position, Vector3 localPosition, Mesh mesh) {this.position = position; this.localPosition = localPosition; this.mesh = mesh; }
+	public Chunk(Vector3 position, Vector3 localPosition, Mesh mesh) {this.position = position; this.localPosition = localPosition; this.mesh = mesh; meshSet = false; }
+
+	public void SetMesh(Vector3[] vertices, int[] trianglesIndex)
+	{
+		this.mesh.vertices = vertices;
+		this.mesh.triangles = trianglesIndex;
+		this.meshSet = true;
+	}
 }
 
 public struct Triangle
@@ -233,6 +293,8 @@ public struct Triangle
     public Vector3 a;
     public Vector3 b;
     public Vector3 c;
+    
+    public Vector3 normal;
 
     public Vector3 this[int i]
     {

@@ -291,11 +291,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   debug: 1
   marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
-  meshMaterial: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
-  numChunksSpawnedPerFrame: 216
-  numThreadsPerAxis: 8
+  meshMaterial: {fileID: 2100000, guid: 3dce95bc9c2a9434b85730a2af89dba3, type: 2}
   dimensions: {x: 60, y: 60, z: 60}
-  chunkSize: 10
   surfaceLevel: 0.5
   noiseSettings:
     seed: 0
