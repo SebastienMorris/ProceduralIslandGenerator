@@ -4,7 +4,7 @@
 
 struct Triangle
 {
-    float3 vertices[3];
+    float3 vertices[];
 };
 
 float isoLevel;

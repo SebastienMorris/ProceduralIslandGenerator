@@ -276,7 +276,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &785088674
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -292,7 +292,10 @@ MonoBehaviour:
   debug: 1
   marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
   meshMaterial: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
+  numChunksSpawnedPerFrame: 216
+  numThreadsPerAxis: 8
   dimensions: {x: 60, y: 60, z: 60}
+  chunkSize: 10
   surfaceLevel: 0.5
   noiseSettings:
     seed: 0
@@ -311,65 +314,6 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 785088673}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1723727054
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1723727056}
-  - component: {fileID: 1723727055}
-  m_Layer: 0
-  m_Name: 'ChunkIslandGenerator '
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1723727055
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1723727054}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c5d19da8f75c9c44db2e07083a215a0b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  debug: 1
-  chunkMarchCompute: {fileID: 7200000, guid: a01121c23faa9a047aaeff4b498bb7ad, type: 3}
-  meshMaterial: {fileID: 2100000, guid: e4c8111c6b9cd0240bdf1d2255a8f745, type: 2}
-  dimensions: {x: 60, y: 60, z: 60}
-  surfaceLevel: 0.5
-  noiseSettings:
-    seed: 0
-    frequency: 2
-    octaves: 1
-    lacunarity: 2
-    persistence: 0.5
-    scale: 0.3
-    applyFallOffMap: 1
-    steepness: 2
-    centerSize: 10
---- !u!4 &1723727056
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1723727054}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -503,4 +447,3 @@ SceneRoots:
   - {fileID: 645806715}
   - {fileID: 1918758252}
   - {fileID: 785088675}
-  - {fileID: 1723727056}
