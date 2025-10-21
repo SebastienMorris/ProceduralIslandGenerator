@@ -34,7 +34,7 @@ public class IslandGenerator : MonoBehaviour
 		private const int CHUNK_SIZE = 10;
 		private const int NUM_VOXELS = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 		private const int MAX_TRIANGLES = NUM_VOXELS * 5;
-		private const int CHUNK_STRIDE = sizeof(float) * 3 * 4;
+		private const int CHUNK_STRIDE = sizeof(float) * 3 * 3;
 
 		private const int CHUNKS_PER_FRAME = 20;
 	#endregion
@@ -83,6 +83,8 @@ public class IslandGenerator : MonoBehaviour
 			{
 				if (chunks[i].meshSet)
 				{
+					chunks[i].mesh.RecalculateNormals();
+					chunks[i].mesh.RecalculateTangents();
 					Bounds bounds = new Bounds(chunks[i].position, new Vector3(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE));
 					Graphics.DrawMeshInstancedProcedural(chunks[i].mesh, 0, meshMaterial, bounds, 1);
 				}
@@ -223,7 +225,6 @@ public class IslandGenerator : MonoBehaviour
 
 		var vertices = new Vector3[numTris * 3];
 		var meshTriangles = new int[numTris * 3];
-		var normals = new Vector3[numTris * 3];
 
 		for (int i = 0; i < numTris; i++)
 		{
@@ -231,12 +232,11 @@ public class IslandGenerator : MonoBehaviour
 			{
 				meshTriangles[i * 3 + j] = i * 3 + j;
 				vertices[i * 3 + j] = chunkTriangles[i][j];
-				normals[i * 3 + j] = chunkTriangles[i].normal;
 			}
 		}
+		
 		chunk.mesh.vertices = vertices;
 		chunk.mesh.triangles = meshTriangles;
-		chunk.mesh.normals = normals;
 	}
 
 	private void SetComputeParams(Chunk chunk)
@@ -293,8 +293,6 @@ public struct Triangle
     public Vector3 a;
     public Vector3 b;
     public Vector3 c;
-    
-    public Vector3 normal;
 
     public Vector3 this[int i]
     {

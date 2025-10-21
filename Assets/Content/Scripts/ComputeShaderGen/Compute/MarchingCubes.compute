@@ -10,8 +10,6 @@ struct Triangle
     float3 vertexC;
     float3 vertexB;
     float3 vertexA;
-
-    float3 normal;
 };
 
 
@@ -30,19 +28,6 @@ int indexFromCoord(int x, int y, int z)
     return z * (dimensions.x + 1) * (dimensions.y + 1) + y * (dimensions.z + 1) + x;
 }
 
-Triangle CreateTriangle(float3 vertexA, float3 vertexB, float3 vertexC)
-{
-    Triangle tri;
-    tri.vertexA = vertexA;
-    tri.vertexB = vertexB;
-    tri.vertexC = vertexC;
-    
-    float3 tangent = normalize(tri.vertexB - tri.vertexA);
-
-    tri.normal = normalize(cross(tangent, tri.vertexC - tri.vertexA));
-
-    return tri;
-}
 
 [numthreads(numThreads,numThreads,numThreads)]
 void March (int3 id : SV_DispatchThreadID)
@@ -55,7 +40,12 @@ void March (int3 id : SV_DispatchThreadID)
 
     if(id.x == 0 && id.y == 0 && id.z == 0)
     {
-        triangles.Append(CreateTriangle(float3(0, 0, 0), float3(0, 0, 0), float3(0, 0, 0)));
+        Triangle tri;
+        tri.vertexA = float3(0, 0, 0);
+        tri.vertexB = float3(0, 0, 0);
+        tri.vertexC = float3(0, 0, 0);
+        
+        triangles.Append(tri);
     }
 
     // 8 corners of the current cube
@@ -98,11 +88,12 @@ void March (int3 id : SV_DispatchThreadID)
 
         int a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i+2]];
         int b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
+
+        Triangle tri;
+        tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
+        tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
+        tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
         
-        float vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
-        float vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
-        float vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
-        
-        triangles.Append(CreateTriangle(vertexA, vertexB, vertexC));
+        triangles.Append(tri);
     }
 }
