@@ -170,6 +170,7 @@ public class IslandGenerator : MonoBehaviour
 						    break;
 					    }
 					    
+					    
 					    Vector3Int coord = new Vector3Int(x, y, z);
 
 					    var chunk = CreateChunk(coord);
