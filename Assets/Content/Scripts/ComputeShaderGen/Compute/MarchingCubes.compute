@@ -16,7 +16,7 @@ struct Triangle
 };
 
 
-AppendStructuredBuffer<Triangle> triangles;
+AppendStructuredBuffer<Triangle> _Triangles;
 
 float isoLevel;
 
@@ -57,7 +57,7 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertices[1] = vertexB;
         tri.vertices[2] = vertexC;
         
-        triangles.Append(tri);
+        _Triangles.Append(tri);
     }
 
     // 8 corners of the current cube
@@ -116,6 +116,6 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertices[1] = vertexB;
         tri.vertices[2] = vertexC;
         
-        triangles.Append(tri);
+        _Triangles.Append(tri);
     }
 }

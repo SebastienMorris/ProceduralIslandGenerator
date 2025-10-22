@@ -290,9 +290,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debug: 1
-  marchingCubesShader: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
-  meshMaterial: {fileID: 2100000, guid: 3dce95bc9c2a9434b85730a2af89dba3, type: 2}
-  dimensions: {x: 60, y: 60, z: 60}
+  marchingCubesCompute: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
+  renderArgsCompute: {fileID: 7200000, guid: 2d406583ff7043440bffe527f625440b, type: 3}
+  renderMaterial: {fileID: 2100000, guid: ce2e1da5e70dd4d449b28c301e7b2c4e, type: 2}
+  dimensions: {x: 200, y: 80, z: 200}
   surfaceLevel: 0.5
   noiseSettings:
     seed: 0
@@ -300,7 +301,7 @@ MonoBehaviour:
     octaves: 1
     lacunarity: 2
     persistence: 0.5
-    scale: 0.3
+    scale: 2
     applyFallOffMap: 1
     steepness: 2
     centerSize: 10
