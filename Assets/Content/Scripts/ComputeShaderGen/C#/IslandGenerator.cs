@@ -22,21 +22,14 @@ public class IslandGenerator : MonoBehaviour
     [SerializeField] private NoiseSettings noiseSettings = NoiseSettings.Default;
     
 	private ComputeBuffer triangleBuffer;
-	private ComputeBuffer triCountBuffer;
-	private Chunk[] chunks;
+	private ComputeBuffer renderArgsBuffer;
 
 	private bool simulate = false;
-	private bool resetCalculation = false;
 
 	private Vector3Int lastFrameDimensions = Vector3Int.zero;
 	
 	#region CONSTANTS
-		private const int CHUNK_SIZE = 10;
-		private const int NUM_VOXELS = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-		private const int MAX_TRIANGLES = NUM_VOXELS * 5;
 		private const int CHUNK_STRIDE = sizeof(float) * 3 * 3;
-
-		private const int CHUNKS_PER_FRAME = 20;
 	#endregion
 
 	private void OnDrawGizmos()
@@ -58,12 +51,6 @@ public class IslandGenerator : MonoBehaviour
 	{
 		ClearBuffers();
 	}
-
-	private void OnValidate()
-	{
-		resetCalculation = true;
-	}
-
 	private void Update()
     {
 	    if (Input.GetKeyUp(KeyCode.G))
@@ -74,53 +61,26 @@ public class IslandGenerator : MonoBehaviour
 			else { StopCalculation(); }
 	    }
     }
-
-	private void LateUpdate()
-	{
-		if (chunks != null)
-		{
-			for (int i=0; i<chunks.Length; i++)
-			{
-				if (chunks[i].meshSet)
-				{
-					chunks[i].mesh.RecalculateNormals();
-					chunks[i].mesh.RecalculateTangents();
-					Bounds bounds = new Bounds(chunks[i].position, new Vector3(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE));
-					Graphics.DrawMeshInstancedProcedural(chunks[i].mesh, 0, meshMaterial, bounds, 1);
-				}
-			}
-		}
-	}
 	
 	
 	private void SetupBuffers()
 	{
-		triangleBuffer = new ComputeBuffer(MAX_TRIANGLES, CHUNK_STRIDE, ComputeBufferType.Append);
-		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
-
-		Vector3Int numChunks = dimensions / CHUNK_SIZE;
-		int nbChunks = numChunks.x * numChunks.y * numChunks.z;
+		int numVoxels = dimensions.x * dimensions.y * dimensions.z;
+		int maxTriangles = numVoxels * 5;
+		
+		triangleBuffer = new ComputeBuffer(maxTriangles, CHUNK_STRIDE, ComputeBufferType.Append);
 	    
 		marchingCubesShader.SetBuffer(0, Shader.PropertyToID("triangles"), triangleBuffer);
-		chunks = new Chunk[nbChunks];
 	}
 	
 	private void ClearBuffers()
 	{
 		triangleBuffer.Release();
-		triCountBuffer.Release();
-		chunks = null;
 	}
 
 	private void ResetBuffers()
 	{
 		triangleBuffer.SetCounterValue(0);
-		triCountBuffer.SetCounterValue(0);
-	}
-
-	private void ResetChunks()
-	{
-		Array.Clear(chunks, 0, chunks.Length);
 	}
 
     void StartCalculation()
@@ -132,7 +92,6 @@ public class IslandGenerator : MonoBehaviour
     {
 	    StopCoroutine(CalculateCoroutine());
 	    ResetBuffers();
-	    ResetChunks();
     }
 
     private void CheckResize()
@@ -143,6 +102,13 @@ public class IslandGenerator : MonoBehaviour
 		    SetupBuffers();
 		    lastFrameDimensions = dimensions;
 	    }
+    }
+
+    private void Generate()
+    {
+	    triangleBuffer.SetCounterValue(0);
+	    
+	    SetComputeParams();
     }
 
     private IEnumerator CalculateCoroutine()
@@ -254,8 +220,7 @@ public class IslandGenerator : MonoBehaviour
 		marchingCubesShader.SetFloat(Shader.PropertyToID("centerSize"), noiseSettings.centerSize);
 		marchingCubesShader.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOffMap);
 		
-		marchingCubesShader.SetVector(Shader.PropertyToID("dimensions"), float4(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE, 0f));
-		marchingCubesShader.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
+		marchingCubesShader.SetVector(Shader.PropertyToID("dimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
 		marchingCubesShader.SetVector(Shader.PropertyToID("globalPos"), float4(chunk.position, 0f));
 		marchingCubesShader.SetVector(Shader.PropertyToID("localPos"), float4(chunk.localPosition, 0f));
 		
