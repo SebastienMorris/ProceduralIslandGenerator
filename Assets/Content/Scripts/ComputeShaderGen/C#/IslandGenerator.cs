@@ -312,3 +312,23 @@ public struct Triangle
     }
 }
 
+[Serializable]
+public struct NoiseSettings
+{
+	public int seed;
+	
+	[Min(1)] public int frequency;
+	
+	[Range(1, 6)] public int octaves;
+	[Range(2, 4)] public int lacunarity;
+	[Range(0f, 1f)] public float persistence;
+	[Range(0.1f, 2f)] public float scale;
+
+	public bool applyFallOffMap;
+	[Range(0.1f, 10f)] public float steepness;
+	[Range(0.1f, 10f)] public float centerSize;
+	
+	public static NoiseSettings Default => new NoiseSettings{frequency = 2, octaves = 1, lacunarity = 2, persistence = 0.5f, scale = 0.5f, applyFallOffMap = true, steepness = 2f, centerSize = 10};
+
+}
+
