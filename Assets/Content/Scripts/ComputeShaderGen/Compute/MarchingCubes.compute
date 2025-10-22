@@ -5,11 +5,14 @@
 
 static const int numThreads = 8;
 
+struct Vertex
+{
+    float3 position;
+};
+
 struct Triangle
 {
-    float3 vertexC;
-    float3 vertexB;
-    float3 vertexA;
+    Vertex vertices[3];
 };
 
 
@@ -40,10 +43,19 @@ void March (int3 id : SV_DispatchThreadID)
 
     if(id.x == 0 && id.y == 0 && id.z == 0)
     {
+        Vertex vertexA;
+        Vertex vertexB;
+        Vertex vertexC;
+
+        vertexA.position = float3(0, 0, 0);
+        vertexB.position = float3(0, 0, 0);
+        vertexC.position = float3(0, 0, 0);
+
         Triangle tri;
-        tri.vertexA = float3(0, 0, 0);
-        tri.vertexB = float3(0, 0, 0);
-        tri.vertexC = float3(0, 0, 0);
+
+        tri.vertices[0] = vertexA;
+        tri.vertices[1] = vertexB;
+        tri.vertices[2] = vertexC;
         
         triangles.Append(tri);
     }
@@ -89,10 +101,20 @@ void March (int3 id : SV_DispatchThreadID)
         int a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i+2]];
         int b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
 
+
+        Vertex vertexA;
+        Vertex vertexB;
+        Vertex vertexC;
+        
+        vertexA.position = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
+        vertexB.position = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
+        vertexC.position = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
+
         Triangle tri;
-        tri.vertexA = interpolateVerts(cubeCorners[a0], cubeCorners[b0]);
-        tri.vertexB = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
-        tri.vertexC = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
+        
+        tri.vertices[0] = vertexA;
+        tri.vertices[1] = vertexB;
+        tri.vertices[2] = vertexC;
         
         triangles.Append(tri);
     }
