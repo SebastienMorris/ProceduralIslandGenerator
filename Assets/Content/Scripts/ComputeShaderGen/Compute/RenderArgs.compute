@@ -1,0 +1,14 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel SetRenderArgs
+
+RWStructuredBuffer<uint> _RenderArgs;
+
+[numthreads(1,1,1)]
+void SetRenderArgs (uint3 id : SV_DispatchThreadID)
+{
+    _RenderArgs[0] *= 3;
+    _RenderArgs[1] = 1;
+    _RenderArgs[2] = 0;
+    _RenderArgs[3] = 0;
+    _RenderArgs[4] = 0;
+}
