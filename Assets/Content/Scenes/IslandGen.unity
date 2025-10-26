@@ -303,7 +303,7 @@ MonoBehaviour:
     octaves: 1
     lacunarity: 2
     persistence: 0.5
-    scale: 0.5
+    scale: 1
     applyFallOffMap: 1
     steepness: 2
     centerSize: 10

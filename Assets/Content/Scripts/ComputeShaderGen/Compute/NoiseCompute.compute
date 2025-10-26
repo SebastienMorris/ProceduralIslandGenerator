@@ -5,7 +5,6 @@ int frequency;
 int octaves;
 int lacunarity;
 float persistence;
-float scale;
 
 float steepness;
 float centerSize;
@@ -49,7 +48,7 @@ float3 GetPosition(int3 index)
 
 float3 GetNoisePosition(int3 index)
 {
-    return float3((globalPos.x + index.x), (globalPos.y + index.y), (globalPos.z + index.z)) * scale;
+    return float3((globalPos.x + index.x) / 1000.0f, (globalPos.y + index.y) / 1000.0f, (globalPos.z + index.z) / 1000.0f);
 }
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)

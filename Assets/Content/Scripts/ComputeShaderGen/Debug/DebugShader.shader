@@ -18,7 +18,7 @@ Shader "Unlit/DebugShader" {
 			
 			StructuredBuffer<float4> Positions;
 			float debugZoom;
-			float scale;
+			//float scale;
 
 			struct v2f
 			{
@@ -29,7 +29,7 @@ Shader "Unlit/DebugShader" {
 			v2f vert (appdata_full v, uint instanceID : SV_InstanceID)
 			{
 				float3 centreWorld = float3(Positions[instanceID].xyz) * debugZoom;
-				float3 worldVertPos = centreWorld + mul(unity_ObjectToWorld, v.vertex * scale);
+				float3 worldVertPos = centreWorld + mul(unity_ObjectToWorld, v.vertex);
 				float3 objectVertPos = mul(unity_WorldToObject, float4(worldVertPos.xyz, 1));
 				
 				v2f o;
