@@ -35,6 +35,7 @@ Shader "Unlit/IslandRenderShader"
             };
 
             StructuredBuffer<Vertex> _VertexBuffer;
+            float4 origin;
 
             /*sampler2D _MainTex;
             float4 _MainTex_ST;*/
@@ -42,7 +43,7 @@ Shader "Unlit/IslandRenderShader"
             v2f vert (appdata v)
             {
                 v2f o;
-                float3 vertPos = _VertexBuffer[v.vertexID].position;
+                float3 vertPos = _VertexBuffer[v.vertexID].position + float3(origin.x, origin.y, origin.z);
                 o.vertex = UnityObjectToClipPos(float4(vertPos, 1));
                 return o;
             }

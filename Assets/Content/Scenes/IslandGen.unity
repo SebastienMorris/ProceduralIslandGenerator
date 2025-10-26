@@ -289,11 +289,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 095dcc9790590234b8da014426c8e023, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debug: 1
+  Guizmo: 1
   marchingCubesCompute: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
   renderArgsCompute: {fileID: 7200000, guid: 2d406583ff7043440bffe527f625440b, type: 3}
   renderMaterial: {fileID: 2100000, guid: ce2e1da5e70dd4d449b28c301e7b2c4e, type: 2}
-  dimensions: {x: 200, y: 80, z: 200}
+  debugMaterial: {fileID: 2100000, guid: 6aa40e0fc74bb6b41823f01d94f4ac43, type: 2}
+  debugMesh: {fileID: 4711208715938537054, guid: 0380c8751014446c2b1751fd9b659040, type: 3}
+  dimensions: {x: 40, y: 20, z: 40}
   surfaceLevel: 0.5
   noiseSettings:
     seed: 0
@@ -301,10 +303,13 @@ MonoBehaviour:
     octaves: 1
     lacunarity: 2
     persistence: 0.5
-    scale: 2
+    scale: 0.5
     applyFallOffMap: 1
     steepness: 2
     centerSize: 10
+  debug: 0
+  debugZoom: 1
+  debugScale: 1
 --- !u!4 &785088675
 Transform:
   m_ObjectHideFlags: 0

@@ -34,14 +34,14 @@ public static partial class Noise
         {
             float4x3 position = domainTRS.TransformVectors(transpose(positions[i]));
             var hash = SmallXXHash4.Seed(noiseSettings.seed);
-            int frequency = noiseSettings.frequency;
+            float frequency = noiseSettings.frequency;
             float amplitude = 1f;
             float amplitudeSum = 0f;
             float4 sum = 0f;
 
             for (int j = 0; j < noiseSettings.octaves; j++)
             {
-                sum += default(N).GetNoise4(position, hash + j, frequency) * amplitude;
+                sum += default(N).GetNoise4(position, hash + j, (int)frequency) * amplitude;
                 amplitudeSum += amplitude;
                 frequency *= noiseSettings.lacunarity;
                 amplitude *= noiseSettings.persistence;

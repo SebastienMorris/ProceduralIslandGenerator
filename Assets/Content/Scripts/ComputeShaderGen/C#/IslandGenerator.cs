@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
@@ -10,43 +11,52 @@ using Vector3 = UnityEngine.Vector3;
 
 public class IslandGenerator : MonoBehaviour
 {
-	[SerializeField] private bool debug;
+	[SerializeField] private bool Guizmo;
 	
 	[SerializeField] private ComputeShader marchingCubesCompute;
 	[SerializeField] private ComputeShader renderArgsCompute;
 	
 	[SerializeField] private Material renderMaterial;
+	[SerializeField] private Material debugMaterial;
+	[SerializeField] private Mesh debugMesh;
 	
 	[SerializeField] private Vector3Int dimensions = new (0, 0, 0);
 	
     [SerializeField] [Range(0, 1)] private float surfaceLevel = 0.5f;
 
     [SerializeField] private NoiseSettings noiseSettings = NoiseSettings.Default;
+
+    [SerializeField] private bool debug = false;
+    [SerializeField] private float debugZoom = 2;
+    [SerializeField] private float debugScale = 1;
     
 	private ComputeBuffer triangleBuffer;
 	private ComputeBuffer renderArgsBuffer;
+	private ComputeBuffer debugBuffer;
+	private ComputeBuffer debugArg;
 
 	private bool simulate = false;
-
-	private Vector3Int lastFrameDimensions = Vector3Int.zero;
+	private bool update = false;
 	
 	#region CONSTANTS
 		private const int TRIANGLE_STRIDE = sizeof(float) * 3 * 3;
+
+		private const int SAMPLE_MODIFIER = 10;
 	#endregion
 
 	private void OnDrawGizmos()
 	{
-		if (debug)
+		if (Guizmo)
 		{
 			Gizmos.color = Color.white;
-			Gizmos.DrawWireCube(transform.position, dimensions);
+			Gizmos.DrawWireCube(transform.position, (Vector3)dimensions * (debug ? debugZoom : 1));
 		}
 	}
 	
 	private void OnEnable()
 	{
 		SetupBuffers();
-		lastFrameDimensions = dimensions;
+		update = true;
 	}
 
 	private void OnDisable()
@@ -58,6 +68,15 @@ public class IslandGenerator : MonoBehaviour
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
 			simulate = !simulate;
+			
+			/*ClearBuffers();
+			SetupBuffers();
+			GenerateDebug();
+			
+			float4[] temp = new float4[dimensions.x * dimensions.y * dimensions.z];
+			debugBuffer.GetData(temp);
+		
+			for(int i=0; i<temp.Length; i++) print(temp[i]);*/
 	    }
     }
 
@@ -65,8 +84,16 @@ public class IslandGenerator : MonoBehaviour
 	{
 		if (simulate)
 		{
-			Generate();
+			if(debug)
+				GenerateDebug();
+			else
+				Generate();
 		}
+	}
+
+	private void OnValidate()
+	{
+		update = true;
 	}
 
 
@@ -77,45 +104,55 @@ public class IslandGenerator : MonoBehaviour
 		
 		triangleBuffer = new ComputeBuffer(maxTriangles, TRIANGLE_STRIDE, ComputeBufferType.Append);
 		renderArgsBuffer = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
+		debugBuffer = new ComputeBuffer(numVoxels, sizeof(float) * 4, ComputeBufferType.Append);
+		debugArg = CreateDebugArgsBuffer(debugMesh, numVoxels);
 	    
 		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_Triangles"), triangleBuffer);
 		renderArgsCompute.SetBuffer(0, Shader.PropertyToID("_RenderArgs"), renderArgsBuffer);
+		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_Debug"), debugBuffer);
 	}
 	
 	private void ClearBuffers()
 	{
 		triangleBuffer.Release();
 		renderArgsBuffer.Release();
+		debugBuffer.Release();
+		debugArg.Release();
 	}
 
 	private void ResetBuffers()
 	{
 		triangleBuffer.SetCounterValue(0);
 		renderArgsBuffer.SetCounterValue(0);
+		debugBuffer.SetCounterValue(0);
+		debugArg.SetCounterValue(0);
 	}
 	
 
-    private void CheckResize()
+    private void Generate()
     {
-	    if (dimensions != lastFrameDimensions)
+	    if (update)
 	    {
 		    ClearBuffers();
 		    SetupBuffers();
-		    lastFrameDimensions = dimensions;
-	    }
-    }
 
-    private void Generate()
-    {
-	    ResetBuffers();
-	    SetComputeParams();
-	    
-	    marchingCubesCompute.Dispatch(0, 8, 8, 8);
+		    ResetBuffers();
+		    SetComputeParams();
+
+		    marchingCubesCompute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
+		    var a = new Vector3Int((int)x, (int)y, (int)z);
+
+		    marchingCubesCompute.Dispatch(0, Mathf.CeilToInt(dimensions.x / (float)a.x),
+			    Mathf.CeilToInt(dimensions.y / (float)a.y), Mathf.CeilToInt(dimensions.z / (float)a.z));
+
+		    ComputeBuffer.CopyCount(triangleBuffer, renderArgsBuffer, 0);
+		    renderArgsCompute.Dispatch(0, 1, 1, 1);
+
+		    update = false;
+	    }
 	    
 	    renderMaterial.SetBuffer(Shader.PropertyToID("_VertexBuffer"), triangleBuffer);
-	    
-	    ComputeBuffer.CopyCount(triangleBuffer, renderArgsBuffer, 0);
-	    renderArgsCompute.Dispatch(0, 1, 1, 1);
+	    renderMaterial.SetVector(Shader.PropertyToID("origin"), float4(transform.position, 0.0f));
 
 	    Bounds bounds = new Bounds(transform.position, dimensions);
 	    
@@ -126,12 +163,11 @@ public class IslandGenerator : MonoBehaviour
 	private void SetComputeParams()
 	{
 		marchingCubesCompute.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
-		marchingCubesCompute.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
+		marchingCubesCompute.SetFloat(Shader.PropertyToID("frequency"), noiseSettings.frequency);
 		marchingCubesCompute.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
 		marchingCubesCompute.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
 		marchingCubesCompute.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
-	    
-		marchingCubesCompute.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale);
+		marchingCubesCompute.SetFloat(Shader.PropertyToID("scale"), noiseSettings.scale / SAMPLE_MODIFIER);
 	    
 		marchingCubesCompute.SetFloat(Shader.PropertyToID("steepness"), noiseSettings.steepness);
 		marchingCubesCompute.SetFloat(Shader.PropertyToID("centerSize"), noiseSettings.centerSize);
@@ -142,6 +178,57 @@ public class IslandGenerator : MonoBehaviour
 		marchingCubesCompute.SetVector(Shader.PropertyToID("localPos"), float4(transform.localPosition, 0f));
 		
 		marchingCubesCompute.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
+	}
+
+	private void GenerateDebug()
+	{
+		if (update)
+		{
+			ClearBuffers();
+			SetupBuffers();
+
+			ResetBuffers();
+			SetComputeParams();
+
+			marchingCubesCompute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
+			var a = new Vector3Int((int)x, (int)y, (int)z);
+
+			marchingCubesCompute.Dispatch(0, Mathf.CeilToInt(dimensions.x / (float)a.x),
+				Mathf.CeilToInt(dimensions.y / (float)a.y), Mathf.CeilToInt(dimensions.z / (float)a.z));
+
+			//float4[] temp = new float4[dimensions.x * dimensions.y * dimensions.z];
+			//debugBuffer.GetData(temp);
+
+			//for(int i=0; i<temp.Length; i++) print(temp[i]);
+
+			update = false;
+		}
+
+		debugMaterial.SetBuffer(Shader.PropertyToID("Positions"), debugBuffer);
+		debugMaterial.SetFloat(Shader.PropertyToID("scale"), debugScale);
+		debugMaterial.SetFloat(Shader.PropertyToID("debugZoom"), debugZoom);
+		
+		Bounds bounds = new Bounds(transform.position, dimensions);
+		
+		Graphics.DrawMeshInstancedIndirect(debugMesh, 0, debugMaterial, bounds, debugArg);
+	}
+	
+	public ComputeBuffer CreateDebugArgsBuffer(Mesh mesh, int numInstances)
+	{
+		const int stride = sizeof(uint);
+		const int numArgs = 5;
+
+		const int subMeshIndex = 0;
+		uint[] args = new uint[numArgs];
+		args[0] = (uint)mesh.GetIndexCount(subMeshIndex);
+		args[1] = (uint)numInstances;
+		args[2] = (uint)mesh.GetIndexStart(subMeshIndex);
+		args[3] = (uint)mesh.GetBaseVertex(subMeshIndex);
+		args[4] = 0; // offset
+
+		ComputeBuffer argsBuffer = new ComputeBuffer(numArgs, stride, ComputeBufferType.IndirectArguments);
+		argsBuffer.SetData(args);
+		return argsBuffer;
 	}
 }
 
@@ -156,7 +243,8 @@ public struct NoiseSettings
 	[Range(1, 6)] public int octaves;
 	[Range(2, 4)] public int lacunarity;
 	[Range(0f, 1f)] public float persistence;
-	[Range(0.1f, 2f)] public float scale;
+
+	[Range(0.01f, 2f)] public float scale;
 
 	public bool applyFallOffMap;
 	[Range(0.1f, 10f)] public float steepness;
@@ -165,4 +253,5 @@ public struct NoiseSettings
 	public static NoiseSettings Default => new NoiseSettings{frequency = 2, octaves = 1, lacunarity = 2, persistence = 0.5f, scale = 0.5f, applyFallOffMap = true, steepness = 2f, centerSize = 10};
 
 }
+
 
