@@ -98,7 +98,6 @@ void March (int3 id : SV_DispatchThreadID)
     if (cubeCorners[6].w < isoLevel) cubeIndex |= 64;
     if (cubeCorners[7].w < isoLevel) cubeIndex |= 128;
 
-    float4 test = float4(cubeCorners[0].xyz, cubeCorners[0].w < 0.0f ? 0.0f : 1);
     _Debug.Append(cubeCorners[0]);
     
     // Create triangles for current cube configuration
