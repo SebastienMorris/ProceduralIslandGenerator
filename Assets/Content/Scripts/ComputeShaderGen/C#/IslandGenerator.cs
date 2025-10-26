@@ -237,7 +237,7 @@ public struct NoiseSettings
 {
 	public int seed;
 	
-	[Range(1, 100)] public int frequency;
+	[Range(1, 200)] public int frequency;
 	
 	[Range(1, 6)] public int octaves;
 	[Range(2, 4)] public int lacunarity;

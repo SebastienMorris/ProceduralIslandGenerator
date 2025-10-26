@@ -299,11 +299,10 @@ MonoBehaviour:
   surfaceLevel: 0.5
   noiseSettings:
     seed: 0
-    frequency: 2
+    frequency: 50
     octaves: 1
     lacunarity: 2
     persistence: 0.5
-    scale: 1
     applyFallOffMap: 1
     steepness: 2
     centerSize: 10
