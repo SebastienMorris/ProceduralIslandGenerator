@@ -15,8 +15,8 @@ public class IslandGenerator : MonoBehaviour
 	
 	[SerializeField] private ComputeShader marchingCubesCompute;
 	
-	[SerializeField] private Material renderMaterial;
-	[SerializeField] private Material debugMaterial;
+	[SerializeField] private Shader renderShader;
+	[SerializeField] private Shader debugShader;
 	[SerializeField] private Mesh debugMesh;
 	
 	[SerializeField] private Vector3Int dimensions = new (0, 0, 0);
@@ -28,6 +28,11 @@ public class IslandGenerator : MonoBehaviour
     [SerializeField] private bool debug = false;
     [SerializeField] private float debugZoom = 2;
     [SerializeField] private float debugScale = 1;
+
+    private ComputeShader compute;
+
+    private Material renderMaterial;
+    private Material debugMaterial;
     
 	private ComputeBuffer triangleBuffer;
 	private ComputeBuffer renderArgsBuffer;
@@ -54,6 +59,11 @@ public class IslandGenerator : MonoBehaviour
 	
 	private void OnEnable()
 	{
+		compute = (ComputeShader)Instantiate(marchingCubesCompute);
+		
+		if (renderMaterial == null) { renderMaterial = new Material(renderShader); }
+		if (debugMaterial == null) { debugMaterial = new Material(debugShader); }
+		
 		SetupBuffers();
 		update = true;
 	}
@@ -61,6 +71,8 @@ public class IslandGenerator : MonoBehaviour
 	private void OnDisable()
 	{
 		ClearBuffers();
+		if (compute != null)
+			DestroyImmediate(compute);
 	}
 	private void Update()
     {
@@ -106,9 +118,9 @@ public class IslandGenerator : MonoBehaviour
 		debugBuffer = new ComputeBuffer(numVoxels, sizeof(float) * 4, ComputeBufferType.Append);
 		debugArg = CreateDebugArgsBuffer(debugMesh, numVoxels);
 	    
-		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_Triangles"), triangleBuffer);
-		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_RenderArgs"), renderArgsBuffer);
-		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_Debug"), debugBuffer);
+		compute.SetBuffer(0, Shader.PropertyToID("_Triangles"), triangleBuffer);
+		compute.SetBuffer(0, Shader.PropertyToID("_RenderArgs"), renderArgsBuffer);
+		compute.SetBuffer(0, Shader.PropertyToID("_Debug"), debugBuffer);
 	}
 	
 	private void ClearBuffers()
@@ -138,10 +150,10 @@ public class IslandGenerator : MonoBehaviour
 		    ResetBuffers();
 		    SetComputeParams();
 
-		    marchingCubesCompute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
+		    compute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
 		    var a = new Vector3Int((int)x, (int)y, (int)z);
 
-		    marchingCubesCompute.Dispatch(0, Mathf.CeilToInt(dimensions.x / (float)a.x),
+		    compute.Dispatch(0, Mathf.CeilToInt(dimensions.x / (float)a.x),
 			    Mathf.CeilToInt(dimensions.y / (float)a.y), Mathf.CeilToInt(dimensions.z / (float)a.z));
 
 		    update = false;
@@ -158,21 +170,21 @@ public class IslandGenerator : MonoBehaviour
     
 	private void SetComputeParams()
 	{
-		marchingCubesCompute.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
-		marchingCubesCompute.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
-		marchingCubesCompute.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
-		marchingCubesCompute.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
-		marchingCubesCompute.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
+		compute.SetInt(Shader.PropertyToID("seed"), noiseSettings.seed);
+		compute.SetInt(Shader.PropertyToID("frequency"), noiseSettings.frequency);
+		compute.SetInt(Shader.PropertyToID("octaves"), noiseSettings.octaves);
+		compute.SetInt(Shader.PropertyToID("lacunarity"), noiseSettings.lacunarity);
+		compute.SetFloat(Shader.PropertyToID("persistence"), noiseSettings.persistence);
 	    
-		marchingCubesCompute.SetFloat(Shader.PropertyToID("steepness"), noiseSettings.steepness);
-		marchingCubesCompute.SetFloat(Shader.PropertyToID("centerSize"), noiseSettings.centerSize);
-		marchingCubesCompute.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOffMap);
+		compute.SetFloat(Shader.PropertyToID("steepness"), noiseSettings.steepness);
+		compute.SetFloat(Shader.PropertyToID("centerSize"), noiseSettings.centerSize);
+		compute.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOffMap);
 		
-		marchingCubesCompute.SetVector(Shader.PropertyToID("dimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
-		marchingCubesCompute.SetVector(Shader.PropertyToID("globalPos"), float4(transform.position, 0f));
-		marchingCubesCompute.SetVector(Shader.PropertyToID("localPos"), float4(transform.localPosition, 0f));
+		compute.SetVector(Shader.PropertyToID("dimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
+		compute.SetVector(Shader.PropertyToID("globalPos"), float4(transform.position, 0f));
+		compute.SetVector(Shader.PropertyToID("localPos"), float4(transform.localPosition, 0f));
 		
-		marchingCubesCompute.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
+		compute.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
 	}
 
 	private void GenerateDebug()
@@ -185,10 +197,10 @@ public class IslandGenerator : MonoBehaviour
 			ResetBuffers();
 			SetComputeParams();
 
-			marchingCubesCompute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
+			compute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
 			var a = new Vector3Int((int)x, (int)y, (int)z);
 
-			marchingCubesCompute.Dispatch(0, Mathf.CeilToInt(dimensions.x / (float)a.x),
+			compute.Dispatch(0, Mathf.CeilToInt(dimensions.x / (float)a.x),
 				Mathf.CeilToInt(dimensions.y / (float)a.y), Mathf.CeilToInt(dimensions.z / (float)a.z));
 
 			//float4[] temp = new float4[dimensions.x * dimensions.y * dimensions.z];
