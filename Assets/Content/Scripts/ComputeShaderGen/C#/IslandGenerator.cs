@@ -14,7 +14,6 @@ public class IslandGenerator : MonoBehaviour
 	[SerializeField] private bool Guizmo;
 	
 	[SerializeField] private ComputeShader marchingCubesCompute;
-	[SerializeField] private ComputeShader renderArgsCompute;
 	
 	[SerializeField] private Material renderMaterial;
 	[SerializeField] private Material debugMaterial;
@@ -108,7 +107,7 @@ public class IslandGenerator : MonoBehaviour
 		debugArg = CreateDebugArgsBuffer(debugMesh, numVoxels);
 	    
 		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_Triangles"), triangleBuffer);
-		renderArgsCompute.SetBuffer(0, Shader.PropertyToID("_RenderArgs"), renderArgsBuffer);
+		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_RenderArgs"), renderArgsBuffer);
 		marchingCubesCompute.SetBuffer(0, Shader.PropertyToID("_Debug"), debugBuffer);
 	}
 	
@@ -144,9 +143,6 @@ public class IslandGenerator : MonoBehaviour
 
 		    marchingCubesCompute.Dispatch(0, Mathf.CeilToInt(dimensions.x / (float)a.x),
 			    Mathf.CeilToInt(dimensions.y / (float)a.y), Mathf.CeilToInt(dimensions.z / (float)a.z));
-
-		    ComputeBuffer.CopyCount(triangleBuffer, renderArgsBuffer, 0);
-		    renderArgsCompute.Dispatch(0, 1, 1, 1);
 
 		    update = false;
 	    }

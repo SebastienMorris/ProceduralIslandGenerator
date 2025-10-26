@@ -17,6 +17,7 @@ struct Triangle
 
 
 AppendStructuredBuffer<Triangle> _Triangles;
+RWStructuredBuffer<uint> _RenderArgs;
 
 AppendStructuredBuffer<float4> _Debug;
 
@@ -45,6 +46,11 @@ void March (int3 id : SV_DispatchThreadID)
 
     if(id.x == 0 && id.y == 0 && id.z == 0)
     {
+        _RenderArgs[1] = 1;
+        _RenderArgs[2] = 0;
+        _RenderArgs[3] = 0;
+        _RenderArgs[4] = 0;
+        
         Vertex vertexA;
         Vertex vertexB;
         Vertex vertexC;
@@ -60,6 +66,8 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertices[2] = vertexC;
         
         _Triangles.Append(tri);
+
+        InterlockedAdd(_RenderArgs[0], 3);
     }
 
     // 8 corners of the current cube
@@ -123,5 +131,7 @@ void March (int3 id : SV_DispatchThreadID)
         tri.vertices[2] = vertexC;
         
         _Triangles.Append(tri);
+
+        InterlockedAdd(_RenderArgs[0], 3);
     }
 }
