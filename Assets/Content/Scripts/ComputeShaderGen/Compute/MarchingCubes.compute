@@ -36,6 +36,9 @@ int indexFromCoord(int x, int y, int z)
     return z * (dimensions.x + 1) * (dimensions.y + 1) + y * (dimensions.z + 1) + x;
 }
 
+float3 CalculateTriangleNormal(float3 a, float3 b, float3 c) {
+    return normalize(cross(b - a, c - a));
+}
 
 [numthreads(numThreads,numThreads,numThreads)]
 void March (int3 id : SV_DispatchThreadID)
@@ -133,10 +136,12 @@ void March (int3 id : SV_DispatchThreadID)
         vertexB.position = interpolateVerts(cubeCorners[a1], cubeCorners[b1]);
         
         vertexC.position = interpolateVerts(cubeCorners[a2], cubeCorners[b2]);
-
-        vertexA.normal =  normalize(cross(vertexB.position - vertexA.position, vertexC.position - vertexA.position));
-        vertexB.normal = normalize(cross(vertexA.position - vertexB.position, vertexC.position - vertexB.position));
-        vertexC.normal = normalize(cross(vertexA.position - vertexC.position, vertexB.position - vertexC.position));
+        
+        float3 triNormal = CalculateTriangleNormal(vertexC.position, vertexB.position, vertexA.position);
+        
+        vertexA.normal = triNormal;
+        vertexB.normal = triNormal;
+        vertexC.normal = triNormal;
 
         Triangle tri;
         

@@ -47,7 +47,9 @@ Shader "Unlit/IslandRenderShader"
                 v2f o;
                 float3 vertPos = _VertexBuffer[v.vertexID].position + float3(origin.x, origin.y, origin.z);
                 o.vertex = UnityObjectToClipPos(float4(vertPos, 1));
-                o.colour.xyz = _VertexBuffer[v.vertexID].normal;
+                
+                float3 col = lerp(float3(0,0,0), float3(1,1,1), _VertexBuffer[v.vertexID].normal.y);
+                o.colour.xyz = col;
                 o.colour.w = 1.0f;
                 
                 return o;
