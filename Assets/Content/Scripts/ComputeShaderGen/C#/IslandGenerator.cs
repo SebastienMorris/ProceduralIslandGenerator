@@ -79,15 +79,6 @@ public class IslandGenerator : MonoBehaviour
 	    if (Input.GetKeyUp(KeyCode.G))
 	    {
 			simulate = !simulate;
-			
-			/*ClearBuffers();
-			SetupBuffers();
-			GenerateDebug();
-			
-			float4[] temp = new float4[dimensions.x * dimensions.y * dimensions.z];
-			debugBuffer.GetData(temp);
-		
-			for(int i=0; i<temp.Length; i++) print(temp[i]);*/
 	    }
     }
 

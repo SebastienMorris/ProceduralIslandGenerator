@@ -27,11 +27,13 @@ Shader "Unlit/IslandRenderShader"
             struct Vertex
             {
                 float3 position;
+                float3 normal;
             };
 
             struct v2f
             {
                 float4 vertex : SV_POSITION;
+                float4 colour : COLOR;
             };
 
             StructuredBuffer<Vertex> _VertexBuffer;
@@ -45,6 +47,9 @@ Shader "Unlit/IslandRenderShader"
                 v2f o;
                 float3 vertPos = _VertexBuffer[v.vertexID].position + float3(origin.x, origin.y, origin.z);
                 o.vertex = UnityObjectToClipPos(float4(vertPos, 1));
+                o.colour.xyz = _VertexBuffer[v.vertexID].normal;
+                o.colour.w = 1.0f;
+                
                 return o;
             }
 
@@ -54,7 +59,7 @@ Shader "Unlit/IslandRenderShader"
                 //fixed4 col = tex2D(_MainTex, i.uv);
                 // apply fog
                 //UNITY_APPLY_FOG(i.fogCoord, col);
-                return float4(0, 0, 0, 1);
+                return i.colour;
             }
             ENDCG
         }

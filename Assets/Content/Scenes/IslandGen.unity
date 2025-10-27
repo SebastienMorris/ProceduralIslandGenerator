@@ -291,9 +291,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Guizmo: 1
   marchingCubesCompute: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
-  renderArgsCompute: {fileID: 7200000, guid: 2d406583ff7043440bffe527f625440b, type: 3}
-  renderMaterial: {fileID: 2100000, guid: ce2e1da5e70dd4d449b28c301e7b2c4e, type: 2}
-  debugMaterial: {fileID: 2100000, guid: 6aa40e0fc74bb6b41823f01d94f4ac43, type: 2}
+  renderShader: {fileID: 4800000, guid: 40560013344bb5a49bfbaacf2e99ee10, type: 3}
+  debugShader: {fileID: 4800000, guid: 2718bf1267c8d4046957f310493d6ab4, type: 3}
   debugMesh: {fileID: 4711208715938537054, guid: 0380c8751014446c2b1751fd9b659040, type: 3}
   dimensions: {x: 40, y: 20, z: 40}
   surfaceLevel: 0.5
