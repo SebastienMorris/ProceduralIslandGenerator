@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.Serialization;
 using static Unity.Mathematics.math;
 using Vector3 = UnityEngine.Vector3;
@@ -12,6 +13,9 @@ using Vector3 = UnityEngine.Vector3;
 public class IslandGenerator : MonoBehaviour
 {
 	[SerializeField] private bool Guizmo;
+
+	[SerializeField] private GameObject light;
+	[SerializeField] private Color lightColour;
 	
 	[SerializeField] private ComputeShader marchingCubesCompute;
 	
@@ -54,6 +58,9 @@ public class IslandGenerator : MonoBehaviour
 		{
 			Gizmos.color = Color.white;
 			Gizmos.DrawWireCube(transform.position, (Vector3)dimensions * (debug ? debugZoom : 1));
+
+			Gizmos.color = Color.yellow;
+			Gizmos.DrawWireSphere(light.transform.position,5);
 		}
 	}
 	
@@ -152,6 +159,8 @@ public class IslandGenerator : MonoBehaviour
 	    
 	    renderMaterial.SetBuffer(Shader.PropertyToID("_VertexBuffer"), triangleBuffer);
 	    renderMaterial.SetVector(Shader.PropertyToID("origin"), float4(transform.position, 0.0f));
+	    renderMaterial.SetVector(Shader.PropertyToID("lightPos"), float4(light.transform.position.x, light.transform.position.y, light.transform.position.z, 0.0f));
+	    renderMaterial.SetVector(Shader.PropertyToID("lightColour"), float4(lightColour.r, lightColour.g, lightColour.b, 0.0f));
 
 	    Bounds bounds = new Bounds(transform.position, dimensions);
 	    

@@ -18,7 +18,6 @@ Shader "Unlit/DebugShader" {
 			
 			StructuredBuffer<float4> Positions;
 			float debugZoom;
-			//float scale;
 
 			struct v2f
 			{

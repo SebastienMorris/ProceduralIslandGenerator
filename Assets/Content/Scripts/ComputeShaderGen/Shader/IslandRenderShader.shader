@@ -2,7 +2,7 @@ Shader "Unlit/IslandRenderShader"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        
     }
     SubShader
     {
@@ -37,7 +37,10 @@ Shader "Unlit/IslandRenderShader"
             };
 
             StructuredBuffer<Vertex> _VertexBuffer;
-            float4 origin;
+            uniform float4 origin;
+
+            uniform float3 lightPos;
+            uniform float3 lightColour;
 
             /*sampler2D _MainTex;
             float4 _MainTex_ST;*/
@@ -47,9 +50,11 @@ Shader "Unlit/IslandRenderShader"
                 v2f o;
                 float3 vertPos = _VertexBuffer[v.vertexID].position + float3(origin.x, origin.y, origin.z);
                 o.vertex = UnityObjectToClipPos(float4(vertPos, 1));
+
+                float3 lightDir = normalize(lightPos - _VertexBuffer[v.vertexID].position);
+                float3 lightCol = max(dot(lightDir, _VertexBuffer[v.vertexID].normal), 0.0) * lightColour;
                 
-                float3 col = lerp(float3(0,0,0), float3(1,1,1), _VertexBuffer[v.vertexID].normal.y);
-                o.colour.xyz = col;
+                o.colour.xyz = lightCol.xyz;
                 o.colour.w = 1.0f;
                 
                 return o;
