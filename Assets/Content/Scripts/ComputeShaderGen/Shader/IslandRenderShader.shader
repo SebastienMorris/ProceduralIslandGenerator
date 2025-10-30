@@ -6,18 +6,20 @@ Shader "Unlit/IslandRenderShader"
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Opaque" "RenderPipeline" = "UniversalPipeline" }
         LOD 100
 
         Pass
         {
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             // make fog work
             //#pragma multi_compile_fog
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct appdata
             {
@@ -37,13 +39,14 @@ Shader "Unlit/IslandRenderShader"
                 float2 uv : TEXCOORD0;
                 float3 normal : TEXCOORD1;
                 float3 worldPos : TEXCOORD2;
+                float4 shadowCoords : TEXCOORD3;
             };
 
             StructuredBuffer<Vertex> _VertexBuffer;
-            uniform float4 origin;
+            float4 origin;
 
-            uniform float3 lightPos;
-            uniform float3 lightColour;
+            float3 lightPos;
+            float3 lightColour;
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
@@ -52,33 +55,33 @@ Shader "Unlit/IslandRenderShader"
             {
                 v2f o;
                 float3 vertPos = _VertexBuffer[v.vertexID].position + float3(origin.x, origin.y, origin.z);
-                o.vertex = UnityObjectToClipPos(float4(vertPos, 1));
-                
-                
-                //float3 lightDir = normalize(lightPos - _VertexBuffer[v.vertexID].position);
-                //loat3 lightCol = max(dot(lightDir, _VertexBuffer[v.vertexID].normal), 0.0) * lightColour;
+                o.vertex = TransformObjectToHClip(float4(vertPos, 1));
 
-                o.normal =  UnityObjectToWorldNormal(_VertexBuffer[v.vertexID].normal);
-                o.worldPos = mul(unity_ObjectToWorld, _VertexBuffer[v.vertexID].position);
+                o.normal =  TransformObjectToWorldNormal(_VertexBuffer[v.vertexID].normal);
+                o.worldPos = TransformObjectToWorld(_VertexBuffer[v.vertexID].position);
 
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+
+                o.shadowCoords = GetShadowCoord(GetVertexPositionInputs(_VertexBuffer[v.vertexID].position));
                 
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            float4 frag (v2f i) : SV_Target
             {
                 //sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
+                //ixed4 col = tex2D(_MainTex, i.uv);
                 // apply fog
                 //UNITY_APPLY_FOG(i.fogCoord, col);
 
                 float3 lightDir = normalize(lightPos - i.worldPos);
                 float3 lightCol = max(dot(lightDir, i.normal), 0.0) * lightColour;
+
+                half shadowAmount = MainLightRealtimeShadow(i.shadowCoords);
                 
-                return float4(lightCol * col.xyz, 1.0);
+                return float4(lightCol * shadowAmount, 1.0);
             }
-            ENDCG
+            ENDHLSL
         }
     }
 }
