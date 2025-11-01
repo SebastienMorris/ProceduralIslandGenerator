@@ -11,6 +11,7 @@ float centerSize;
 bool applyFallOff;
 
 float4 dimensions;
+float4 globalDimensions;
 float4 globalPos;
 float4 localPos;
 
@@ -31,9 +32,9 @@ float GetFallOffValue(float3 pos)
     if (!applyFallOff)
         return 0.0;
 
-    float x = (pos.x + localPos.x) / dimensions.x * 2.0;
-    float y = (pos.y + localPos.y) / dimensions.y * 2.0;
-    float z = (pos.z + localPos.z) / dimensions.z * 2.0;
+    float x = (pos.x + localPos.x) / globalDimensions.x * 2.0;
+    float y = (pos.y + localPos.y) / globalDimensions.y * 2.0;
+    float z = (pos.z + localPos.z) / globalDimensions.z * 2.0;
 
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));

@@ -45,8 +45,6 @@ public class IslandGenerator : MonoBehaviour
 	
 	#region CONSTANTS
 		private const int TRIANGLE_STRIDE = sizeof(float) * 3 * 3;
-
-		private const int SAMPLE_MODIFIER = 10;
 	#endregion
 
 	private void OnDrawGizmos()
@@ -173,6 +171,7 @@ public class IslandGenerator : MonoBehaviour
 		compute.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOffMap);
 		
 		compute.SetVector(Shader.PropertyToID("dimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
+		compute.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
 		compute.SetVector(Shader.PropertyToID("globalPos"), float4(transform.position, 0f));
 		compute.SetVector(Shader.PropertyToID("localPos"), float4(transform.localPosition, 0f));
 		

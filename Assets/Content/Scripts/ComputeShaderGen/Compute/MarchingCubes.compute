@@ -21,8 +21,6 @@ AppendStructuredBuffer<Triangle> _Triangles;
 
 RWStructuredBuffer<uint> _RenderArgs;
 
-AppendStructuredBuffer<float4> _Debug;
-
 float isoLevel;
 
 float3 interpolateVerts(float4 v1, float4 v2)
@@ -47,39 +45,6 @@ void March (int3 id : SV_DispatchThreadID)
     if (id.x >= dimensions.x || id.y >= dimensions.y || id.z >= dimensions.z) 
     {
         return;
-    }
-
-    if(id.x == 0 && id.y == 0 && id.z == 0)
-    {
-        _RenderArgs[1] = 1;
-        _RenderArgs[2] = 0;
-        _RenderArgs[3] = 0;
-        _RenderArgs[4] = 0;
-        
-        Vertex vertexA;
-        Vertex vertexB;
-        Vertex vertexC;
-
-        vertexA.position = float3(0, 0, 0);
-        vertexA.normal = float3(0, 0, 0);
-        
-        vertexB.position = float3(0, 0, 0);
-        vertexB.normal = float3(0, 0, 0);
-        
-        vertexC.position = float3(0, 0, 0);
-        vertexC.normal = float3(0, 0, 0);
-        
-        
-
-        Triangle tri;
-
-        tri.vertices[0] = vertexA;
-        tri.vertices[1] = vertexB;
-        tri.vertices[2] = vertexC;
-        
-        _Triangles.Append(tri);;
-
-        InterlockedAdd(_RenderArgs[0], 3);
     }
 
     // 8 corners of the current cube
@@ -109,8 +74,6 @@ void March (int3 id : SV_DispatchThreadID)
     if (cubeCorners[5].w < isoLevel) cubeIndex |= 32;
     if (cubeCorners[6].w < isoLevel) cubeIndex |= 64;
     if (cubeCorners[7].w < isoLevel) cubeIndex |= 128;
-
-    _Debug.Append(cubeCorners[0]);
     
     // Create triangles for current cube configuration
     for (int i = 0; triangulation[cubeIndex][i] != -1; i +=3) 
