@@ -133,8 +133,9 @@ GameObject:
   m_Component:
   - component: {fileID: 645806715}
   - component: {fileID: 645806714}
-  - component: {fileID: 645806713}
   - component: {fileID: 645806716}
+  - component: {fileID: 645806718}
+  - component: {fileID: 645806717}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -142,14 +143,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &645806713
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 645806712}
-  m_Enabled: 1
 --- !u!20 &645806714
 Camera:
   m_ObjectHideFlags: 0
@@ -209,13 +202,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 645806712}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.18493308, y: -0, z: -0, w: 0.98275113}
-  m_LocalPosition: {x: 0, y: 2.45, z: -5.08}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 50, z: -150}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 21.314, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &645806716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -260,6 +253,85 @@ MonoBehaviour:
     mipBias: 0
     varianceClampScale: 0.9
     contrastAdaptiveSharpening: 0
+--- !u!114 &645806717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 645806712}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Actions: {fileID: -944628639613478452, guid: f21d2118ff91da448b8116f5c3b8807b, type: 3}
+  m_NotificationBehavior: 2
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents:
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 645806718}
+        m_TargetAssemblyTypeName: CameraController, Assembly-CSharp
+        m_MethodName: OnMove
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 0daa1467-365a-48ba-b3d2-1ab752470747
+    m_ActionName: Player/Move[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 645806718}
+        m_TargetAssemblyTypeName: CameraController, Assembly-CSharp
+        m_MethodName: OnZoom
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 148ef4f1-07e4-4b81-97cc-134338790b7d
+    m_ActionName: Player/Zoom
+  m_NeverAutoSwitchControlSchemes: 1
+  m_DefaultControlScheme: Keyboard&Mouse
+  m_DefaultActionMap: Player
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 645806714}
+--- !u!114 &645806718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 645806712}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea769dbbbeb04a248ace2f2dc5e36cfc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  referenceObj: {fileID: 737615344}
+  moveSpeed: 100
+  zooomSpeed: 100
+  maxDistance: 10000
+  distance: 10
 --- !u!1 &737615344
 GameObject:
   m_ObjectHideFlags: 0
@@ -292,7 +364,14 @@ MonoBehaviour:
   Guizmo: 1
   marchingCubesCompute: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
   renderShader: {fileID: 4800000, guid: 40560013344bb5a49bfbaacf2e99ee10, type: 3}
-  dimensions: {x: 75, y: 100, z: 100}
+  mainLight: {fileID: 1918758251}
+  mainLightRotation: {x: 50, y: 30, z: 0}
+  shadowStrength: 0.2
+  textureData:
+    grassTexture: {fileID: 2800000, guid: 00c06665690779b4b89d2a43014d5e71, type: 3}
+    groundTexture: {fileID: 2800000, guid: 73062311112633b44b1229800c504f9e, type: 3}
+    grassBlend: 0.5
+  dimensions: {x: 100, y: 40, z: 100}
   surfaceLevel: 0.5
   noiseSettings:
     seed: 0

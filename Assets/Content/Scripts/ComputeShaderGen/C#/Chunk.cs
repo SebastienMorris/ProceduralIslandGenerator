@@ -11,6 +11,9 @@ namespace Content.Scripts.ComputeShaderGen.C_
         private ComputeShader compute;
 
         private Material renderMaterial;
+        private float grassBlend;
+
+        private float shadowStrength;
 
         private ComputeBuffer triangleBuffer;
         private ComputeBuffer renderArgsBuffer;
@@ -36,12 +39,17 @@ namespace Content.Scripts.ComputeShaderGen.C_
         #endregion
 
 
-        public void Initialize(ComputeShader marchingCompute, Shader renderShader, Vector3Int dimensions, Vector3Int coord,
+        public void Initialize(ComputeShader marchingCompute, Shader renderShader, IslandTexture textureData, float shadowStrength, Vector3Int dimensions, Vector3Int coord,
             Vector3Int size, int maxSize, NoiseSettings settings, float surfaceLevel)
         {
             compute = (ComputeShader)Instantiate(marchingCompute);
             renderMaterial = new Material(renderShader);
+            renderMaterial.SetTexture(Shader.PropertyToID("_GrassTex"), textureData.grassTexture);
+            renderMaterial.SetTexture(Shader.PropertyToID("_GroundTex"), textureData.groundTexture);
+            this.grassBlend = textureData.grassBlend;
 
+            this.shadowStrength = shadowStrength;
+                
             this.dimensions = dimensions;
             this.coord = coord;
             this.size = size;
@@ -69,10 +77,14 @@ namespace Content.Scripts.ComputeShaderGen.C_
             Generate();
         }
 
-        public void OnParamUpdate(Vector3Int dimensions, Vector3Int numChunks, NoiseSettings settings,
+        public void OnParamUpdate(IslandTexture textureData, float shadowStrength, Vector3Int dimensions, Vector3Int numChunks, NoiseSettings settings,
             float surfaceLevel)
         {
             if (!initialized || isDestroying) return;
+
+            this.grassBlend = textureData.grassBlend;
+
+            this.shadowStrength = shadowStrength;
             
             this.dimensions = dimensions;
             this.settings = settings;
@@ -204,7 +216,9 @@ namespace Content.Scripts.ComputeShaderGen.C_
             Vector3 position = transform.position;
 
             renderMaterial.SetBuffer(Shader.PropertyToID("_VertexBuffer"), triangleBuffer);
-            renderMaterial.SetVector(Shader.PropertyToID("origin"), float4(position, 0.0f));
+            renderMaterial.SetVector(Shader.PropertyToID("_Origin"), float4(position, 0.0f));
+            renderMaterial.SetFloat(Shader.PropertyToID("_ShadowStrength"), shadowStrength);
+            renderMaterial.SetFloat(Shader.PropertyToID("_GrassBlend"), grassBlend);
 
             Bounds bounds = new Bounds(position, size);
 

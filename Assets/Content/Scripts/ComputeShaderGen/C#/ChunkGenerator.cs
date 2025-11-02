@@ -1,23 +1,41 @@
 using System;
 using System.Collections;
+using System.ComponentModel;
 using UnityEngine;
+using UnityEngine.Experimental.GlobalIllumination;
+using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 namespace Content.Scripts.ComputeShaderGen.C_
 {
     public class ChunkGenerator : MonoBehaviour
     {
         [SerializeField] private bool Guizmo;
-	
+
+        
         [SerializeField] private ComputeShader marchingCubesCompute;
         [SerializeField] private Shader renderShader;
+        
+        
+        [Header("Lighting")]
+        [SerializeField] private Light mainLight;
+        [SerializeField] private Vector3 mainLightRotation = Vector3.zero;
+        [SerializeField, Range(0.0f, 1.0f)] private float shadowStrength = 0.2f; 
+        
+
+        [Header("Texturing")]
+        [SerializeField] private IslandTexture textureData = IslandTexture.Default;
+        
 	
+        [Header("Generation")]
         [SerializeField] private Vector3Int dimensions = new (0, 0, 0);
-	
         [SerializeField] [Range(0, 1)] private float surfaceLevel = 0.5f;
 
+        
+        [Header("Noise Properties")]
         [SerializeField] private NoiseSettings noiseSettings = NoiseSettings.Default;
 
-        public Action<Vector3Int, Vector3Int, NoiseSettings, float> OnValueUpdate;
+        public Action<IslandTexture, float, Vector3Int, Vector3Int, NoiseSettings, float> OnValueUpdate;
 
         private Vector3Int numCurrentChunks = Vector3Int.zero;
 
@@ -42,7 +60,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void Start()
         {
-            print("ouheafiuzehf");
+            mainLight.transform.rotation = Quaternion.Euler(mainLightRotation);
             InitialiseChunks();
         }
 
@@ -50,7 +68,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
         {
             if (!initilised || isUpdating) return;
             
-            OnValueUpdate?.Invoke(dimensions, GetNumChunks(), noiseSettings, surfaceLevel);
+            OnValueUpdate?.Invoke(textureData, shadowStrength, dimensions, GetNumChunks(), noiseSettings, surfaceLevel);
             update = true;
         }
 
@@ -58,6 +76,8 @@ namespace Content.Scripts.ComputeShaderGen.C_
         {
             if (update)
             {
+                mainLight.transform.rotation = Quaternion.Euler(mainLightRotation);
+                
                 isUpdating = true;
                 CheckNewChunks();
                 update = false;
@@ -118,7 +138,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
             obj.transform.parent = gameObject.transform;
 
             var chunk = obj.AddComponent<Chunk>();
-            chunk.Initialize(marchingCubesCompute, renderShader, dimensions, coord, size, MAX_CHUNK_SIZE, noiseSettings, surfaceLevel);
+            chunk.Initialize(marchingCubesCompute, renderShader, textureData, shadowStrength, dimensions, coord, size, MAX_CHUNK_SIZE, noiseSettings, surfaceLevel);
             chunk.OnChunkDestroyed += OnChunkDestroyed;
             OnValueUpdate += chunk.OnParamUpdate;
         }
@@ -177,5 +197,16 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
             return numChunks;
         }
+    }
+
+    [Serializable]
+    public struct IslandTexture
+    {
+        public Texture2D grassTexture;
+        public Texture2D groundTexture;
+
+        [Range(0.0f, 1.0f)] public float grassBlend;
+        
+        public static IslandTexture Default => new IslandTexture(){grassBlend = 0.5f};
     }
 }
