@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.ComponentModel;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.Rendering;
@@ -196,6 +197,110 @@ namespace Content.Scripts.ComputeShaderGen.C_
             numChunks.z += dimensions.z % MAX_CHUNK_SIZE == 0 ? 0 : 1;
 
             return numChunks;
+        }
+
+        private void OnGUI()
+        {
+            GUILayout.BeginArea(new Rect(10, 10, 300, 600));
+            GUILayout.BeginVertical("box");
+    
+            GUILayout.Label("Generator Controls", GUI.skin.box);
+            GUILayout.Label("Move     WASD");
+            GUILayout.Label("Zoom     Mouse Scroll");
+            GUILayout.HorizontalSlider(10.0f, 2.0f, 800.0f);
+            
+            
+            GUILayout.Space(10);
+            GUILayout.Label("Dimensions", EditorStyles.boldLabel);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("X:", GUILayout.Width(20));
+            string newX = GUILayout.TextField(dimensions.x.ToString(), GUILayout.Width(60));
+            GUILayout.Label("Y:", GUILayout.Width(20));
+            string newY = GUILayout.TextField(dimensions.y.ToString(), GUILayout.Width(60));
+            GUILayout.Label("Z:", GUILayout.Width(20));
+            string newZ = GUILayout.TextField(dimensions.z.ToString(), GUILayout.Width(60));
+            GUILayout.EndHorizontal();
+    
+            if (int.TryParse(newX, out int x) && int.TryParse(newY, out int y) && int.TryParse(newZ, out int z))
+            {
+                Vector3Int newDim = new Vector3Int(x, y, z);
+                if (newDim != dimensions)
+                {
+                    dimensions = newDim;
+                    OnValidate();
+                }
+            }
+            
+            GUILayout.Space(10);
+            GUILayout.Label("Surface Level", EditorStyles.boldLabel);
+            float newSurfaceLevel = GUILayout.HorizontalSlider(surfaceLevel, 0f, 1f);
+            GUILayout.Label($"Value: {surfaceLevel:F3}");
+            if (Mathf.Abs(newSurfaceLevel - surfaceLevel) > 0.001f)
+            {
+                surfaceLevel = newSurfaceLevel;
+                OnValidate();
+            }
+            
+            GUILayout.Space(10);
+            GUILayout.Label("Shadow Strength", EditorStyles.boldLabel);
+            float newShadow = GUILayout.HorizontalSlider(shadowStrength, 0f, 1f);
+            GUILayout.Label($"Value: {shadowStrength:F3}");
+            if (Mathf.Abs(newShadow - shadowStrength) > 0.001f)
+            {
+                shadowStrength = newShadow;
+                OnValidate();
+            }
+            
+            GUILayout.Space(10);
+            GUILayout.Label("Grass Blend", EditorStyles.boldLabel);
+            float newGrassBlend = GUILayout.HorizontalSlider(textureData.grassBlend, 0f, 1f);
+            GUILayout.Label($"Value: {textureData.grassBlend:F3}");
+            if (Mathf.Abs(newGrassBlend - textureData.grassBlend) > 0.001f)
+            {
+                textureData.grassBlend = newGrassBlend;
+                OnValidate();
+            }
+    
+    
+            GUILayout.Space(10);
+            GUILayout.Label("Light Rotation", EditorStyles.boldLabel);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("X:", GUILayout.Width(20));
+            string rotX = GUILayout.TextField(mainLightRotation.x.ToString("F1"), GUILayout.Width(60));
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Y:", GUILayout.Width(20));
+            string rotY = GUILayout.TextField(mainLightRotation.y.ToString("F1"), GUILayout.Width(60));
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Z:", GUILayout.Width(20));
+            string rotZ = GUILayout.TextField(mainLightRotation.z.ToString("F1"), GUILayout.Width(60));
+            GUILayout.EndHorizontal();
+    
+            if (float.TryParse(rotX, out float rx) && float.TryParse(rotY, out float ry) && float.TryParse(rotZ, out float rz))
+            {
+                Vector3 newRot = new Vector3(rx, ry, rz);
+                if (newRot != mainLightRotation)
+                {
+                    mainLightRotation = newRot;
+                    OnValidate();
+                }
+            }
+            
+            GUILayout.Space(10);
+            GUILayout.Label("Info", EditorStyles.boldLabel);
+            GUILayout.Label($"Chunks: {numCurrentChunks.x}x{numCurrentChunks.y}x{numCurrentChunks.z}");
+            GUILayout.Label($"Total: {numCurrentChunks.x * numCurrentChunks.y * numCurrentChunks.z}");
+            GUILayout.Label($"Updating: {(isUpdating ? "Yes" : "No")}");
+            
+            GUILayout.Space(10);
+            if (GUILayout.Button(Guizmo ? "Hide Gizmo" : "Show Gizmo"))
+            {
+                Guizmo = !Guizmo;
+            }
+    
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
         }
     }
 
