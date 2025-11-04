@@ -12,6 +12,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
     public class ChunkGenerator : MonoBehaviour
     {
         [SerializeField] private bool Guizmo;
+        [SerializeField] CameraController cameraController;
 
         
         [SerializeField] private ComputeShader marchingCubesCompute;
@@ -207,8 +208,11 @@ namespace Content.Scripts.ComputeShaderGen.C_
             GUILayout.Label("Generator Controls", GUI.skin.box);
             GUILayout.Label("Move     WASD");
             GUILayout.Label("Zoom     Mouse Scroll");
-            GUILayout.HorizontalSlider(10.0f, 2.0f, 800.0f);
-            
+            float newDist = GUILayout.HorizontalSlider(cameraController.Distance, 2.0f, 800.0f);
+            if (Mathf.Abs(newDist - cameraController.Distance) > 0.001f)
+            {
+                cameraController.Distance = newDist;
+            }
             
             GUILayout.Space(10);
             GUILayout.Label("Dimensions", EditorStyles.boldLabel);
@@ -232,16 +236,75 @@ namespace Content.Scripts.ComputeShaderGen.C_
             }
             
             GUILayout.Space(10);
-            GUILayout.Label("Surface Level", EditorStyles.boldLabel);
+            GUILayout.Label($"Surface Level {surfaceLevel:F3}", EditorStyles.boldLabel);
             float newSurfaceLevel = GUILayout.HorizontalSlider(surfaceLevel, 0f, 1f);
-            GUILayout.Label($"Value: {surfaceLevel:F3}");
             if (Mathf.Abs(newSurfaceLevel - surfaceLevel) > 0.001f)
             {
                 surfaceLevel = newSurfaceLevel;
                 OnValidate();
             }
             
+            GUILayout.Space(5);
+            GUILayout.Label($"Grass Ratio: {textureData.grassBlend:F3}", EditorStyles.boldLabel);
+            float newGrassBlend = GUILayout.HorizontalSlider(textureData.grassBlend, 0f, 1f);
+            
+            if (Mathf.Abs(newGrassBlend - textureData.grassBlend) > 0.001f)
+            {
+                textureData.grassBlend = newGrassBlend;
+                OnValidate();
+            }
+            
             GUILayout.Space(10);
+            
+            GUILayout.Label("Seed", EditorStyles.boldLabel);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("X:", GUILayout.Width(20));
+            string newSeed = GUILayout.TextField(dimensions.x.ToString(), GUILayout.Width(60));
+            GUILayout.EndHorizontal();
+            
+            GUILayout.Label("Noise",  EditorStyles.boldLabel);
+            GUILayout.Space(5);
+            GUILayout.Label($"Frequency: {noiseSettings.frequency}", EditorStyles.boldLabel);
+            int newFrequency = (int)GUILayout.HorizontalSlider(noiseSettings.frequency, 1.0f, 200.0f);
+            
+            GUILayout.Space(5);
+            GUILayout.Label($"Octaves: {noiseSettings.octaves}", EditorStyles.boldLabel);
+            int newOctaves = (int)GUILayout.HorizontalSlider(noiseSettings.octaves, 1.0f, 6.0f);
+            
+            GUILayout.Space(5);
+            GUILayout.Label($"Lacunarity: {noiseSettings.lacunarity}", EditorStyles.boldLabel);
+            int newLacunarity = (int)GUILayout.HorizontalSlider(noiseSettings.lacunarity, 2.0f, 4.0f);
+            
+            GUILayout.Space(5);
+            GUILayout.Label($"Persistence: {noiseSettings.persistence}", EditorStyles.boldLabel);
+            float newPersistence = GUILayout.HorizontalSlider(noiseSettings.persistence, 0.0f, 1.0f);
+            
+            GUILayout.Space(5);
+            GUILayout.Label("ApplyFallOffMap", EditorStyles.boldLabel);
+            GUILayout.BeginHorizontal();
+            bool newApplyFallOff = GUILayout.Toggle(noiseSettings.applyFallOffMap, "");
+            GUILayout.EndHorizontal();
+            
+            if (false)
+            {
+                
+                OnValidate();
+            }
+    
+            GUILayout.Space(10);
+            GUILayout.Label("Lighting", EditorStyles.boldLabel);
+            GUILayout.Space(5);
+            GUILayout.Label("Light Rotation", EditorStyles.boldLabel);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("X:", GUILayout.Width(20));
+            string rotX = GUILayout.TextField(mainLightRotation.x.ToString("F1"), GUILayout.Width(60));
+            GUILayout.Label("Y:", GUILayout.Width(20));
+            string rotY = GUILayout.TextField(mainLightRotation.y.ToString("F1"), GUILayout.Width(60));
+            GUILayout.Label("Z:", GUILayout.Width(20));
+            string rotZ = GUILayout.TextField(mainLightRotation.z.ToString("F1"), GUILayout.Width(60));
+            GUILayout.EndHorizontal();
+            
+            GUILayout.Space(5);
             GUILayout.Label("Shadow Strength", EditorStyles.boldLabel);
             float newShadow = GUILayout.HorizontalSlider(shadowStrength, 0f, 1f);
             GUILayout.Label($"Value: {shadowStrength:F3}");
@@ -250,32 +313,6 @@ namespace Content.Scripts.ComputeShaderGen.C_
                 shadowStrength = newShadow;
                 OnValidate();
             }
-            
-            GUILayout.Space(10);
-            GUILayout.Label("Grass Blend", EditorStyles.boldLabel);
-            float newGrassBlend = GUILayout.HorizontalSlider(textureData.grassBlend, 0f, 1f);
-            GUILayout.Label($"Value: {textureData.grassBlend:F3}");
-            if (Mathf.Abs(newGrassBlend - textureData.grassBlend) > 0.001f)
-            {
-                textureData.grassBlend = newGrassBlend;
-                OnValidate();
-            }
-    
-    
-            GUILayout.Space(10);
-            GUILayout.Label("Light Rotation", EditorStyles.boldLabel);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("X:", GUILayout.Width(20));
-            string rotX = GUILayout.TextField(mainLightRotation.x.ToString("F1"), GUILayout.Width(60));
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Y:", GUILayout.Width(20));
-            string rotY = GUILayout.TextField(mainLightRotation.y.ToString("F1"), GUILayout.Width(60));
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Z:", GUILayout.Width(20));
-            string rotZ = GUILayout.TextField(mainLightRotation.z.ToString("F1"), GUILayout.Width(60));
-            GUILayout.EndHorizontal();
     
             if (float.TryParse(rotX, out float rx) && float.TryParse(rotY, out float ry) && float.TryParse(rotZ, out float rz))
             {
@@ -288,10 +325,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
             }
             
             GUILayout.Space(10);
-            GUILayout.Label("Info", EditorStyles.boldLabel);
-            GUILayout.Label($"Chunks: {numCurrentChunks.x}x{numCurrentChunks.y}x{numCurrentChunks.z}");
-            GUILayout.Label($"Total: {numCurrentChunks.x * numCurrentChunks.y * numCurrentChunks.z}");
-            GUILayout.Label($"Updating: {(isUpdating ? "Yes" : "No")}");
+            GUILayout.Label($"FPS: {(int)(1.0f / Time.unscaledDeltaTime)}");
             
             GUILayout.Space(10);
             if (GUILayout.Button(Guizmo ? "Hide Gizmo" : "Show Gizmo"))

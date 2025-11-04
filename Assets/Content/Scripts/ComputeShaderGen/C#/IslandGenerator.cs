@@ -235,7 +235,6 @@ public class IslandGenerator : MonoBehaviour
 public struct NoiseSettings
 {
 	public int seed;
-	
 	[Range(1, 200)] public int frequency;
 	
 	[Range(1, 6)] public int octaves;
@@ -248,6 +247,37 @@ public struct NoiseSettings
 	
 	public static NoiseSettings Default => new NoiseSettings{frequency = 50, octaves = 1, lacunarity = 2, persistence = 0.5f, applyFallOffMap = true, steepness = 2f, centerSize = 10};
 
+	public bool Compare(NoiseSettings noiseSettings)
+	{
+		if(seed != noiseSettings.seed) return false;
+		if (frequency != noiseSettings.frequency) return false;
+		
+		if (octaves != noiseSettings.octaves) return false;
+		if(lacunarity != noiseSettings.lacunarity) return false;
+		if(Mathf.Abs(persistence - noiseSettings.persistence) >= 0.001 ) return false;
+		
+		if(applyFallOffMap != noiseSettings.applyFallOffMap) return false;
+		if(Mathf.Abs(steepness - noiseSettings.steepness) >= 0.001) return false;
+		if(Mathf.Abs(centerSize - noiseSettings.centerSize) >= 0.001) return false;
+		
+		return true;
+	}
+	
+	public bool Compare(int seed, int frequency, int octaves, int lacunarity, float persistence, bool applyFallOffMap, float steepness, float centerSize)
+	{
+		if(this.seed != seed) return false;
+		if (this.frequency != frequency) return false;
+		
+		if (this.octaves != octaves) return false;
+		if(this.lacunarity != lacunarity) return false;
+		if(Mathf.Abs(this.persistence - persistence) >= 0.001 ) return false;
+		
+		if(this.applyFallOffMap != applyFallOffMap) return false;
+		if(Mathf.Abs(this.steepness - steepness) >= 0.001) return false;
+		if(Mathf.Abs(this.centerSize - centerSize) >= 0.001) return false;
+		
+		return true;
+	}
 }
 
 

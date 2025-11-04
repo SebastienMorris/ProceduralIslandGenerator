@@ -5,7 +5,13 @@ public class CameraController : MonoBehaviour
 {
     [SerializeField] private GameObject referenceObj;
     [SerializeField] private float moveSpeed = 50f;
+    
     [SerializeField] private float distance = 10f;
+    public float Distance {
+        get => distance;
+        set => distance = Mathf.Clamp(value, minDistance, maxDistance);
+    }
+    
     [SerializeField] private float zoomSpeed = 2f;
     [SerializeField] private float minDistance = 2f;
     [SerializeField] private float maxDistance = 50f;

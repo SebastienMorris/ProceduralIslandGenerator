@@ -329,9 +329,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   referenceObj: {fileID: 737615344}
   moveSpeed: 100
-  zooomSpeed: 100
-  maxDistance: 10000
   distance: 10
+  zoomSpeed: 0.02
+  minDistance: 2
+  maxDistance: 800
 --- !u!1 &737615344
 GameObject:
   m_ObjectHideFlags: 0
@@ -362,6 +363,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Guizmo: 1
+  cameraController: {fileID: 645806718}
   marchingCubesCompute: {fileID: 7200000, guid: d0d003a4aaf916a4583735248e8d756e, type: 3}
   renderShader: {fileID: 4800000, guid: 40560013344bb5a49bfbaacf2e99ee10, type: 3}
   mainLight: {fileID: 1918758251}
