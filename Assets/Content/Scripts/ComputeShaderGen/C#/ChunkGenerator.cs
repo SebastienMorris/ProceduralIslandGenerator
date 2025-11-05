@@ -11,7 +11,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 {
     public class ChunkGenerator : MonoBehaviour
     {
-        [SerializeField] private bool Guizmo;
+        [SerializeField] private bool guizmo;
         [SerializeField] CameraController cameraController;
 
 
@@ -49,6 +49,102 @@ namespace Content.Scripts.ComputeShaderGen.C_
         private int MAX_CHUNK_SIZE = 50;
 
         #endregion
+        
+        #region Public Properties
+        public bool Guizmo
+        {
+            get => guizmo;
+            set => guizmo = value;
+        }
+
+        public Vector3Int Dimensions
+        {
+            get => dimensions;
+            set
+            {
+                if (dimensions != value)
+                {
+                    dimensions = value;
+                    UpdateValue();
+                }
+            }
+        }
+
+        public float SurfaceLevel
+        {
+            get => surfaceLevel;
+            set
+            {
+                if (Mathf.Abs(surfaceLevel - value) > 0.001f)
+                {
+                    surfaceLevel = value;
+                    UpdateValue();
+                }
+            }
+        }
+
+        public IslandTexture TextureData
+        {
+            get => textureData;
+            set
+            {
+                textureData = value;
+                UpdateValue();
+            }
+        }
+
+        public NoiseSettings NoiseSettings
+        {
+            get => noiseSettings;
+            set
+            {
+                noiseSettings = value;
+                UpdateValue();
+            }
+        }
+
+        public Vector3 MainLightRotation
+        {
+            get => mainLightRotation;
+            set
+            {
+                if (mainLightRotation != value)
+                {
+                    mainLightRotation = value;
+                    UpdateValue();
+                }
+            }
+        }
+        
+        public float Intensity
+        {
+            get => mainLight.intensity;
+
+            set
+            {
+                if (Mathf.Abs(mainLight.intensity - value) > 0.001f)
+                {
+                    mainLight.intensity = value;
+                    UpdateValue();
+                }
+            }
+            
+        }
+
+        public float ShadowStrength
+        {
+            get => shadowStrength;
+            set
+            {
+                if (Mathf.Abs(shadowStrength - value) > 0.001f)
+                {
+                    shadowStrength = value;
+                    UpdateValue();
+                }
+            }
+        }
+        #endregion
+
 
         private void OnDrawGizmos()
         {
@@ -66,6 +162,11 @@ namespace Content.Scripts.ComputeShaderGen.C_
         }
 
         private void OnValidate()
+        {
+            UpdateValue();
+        }
+
+        private void UpdateValue()
         {
             if (!initilised || isUpdating) return;
 
@@ -198,192 +299,6 @@ namespace Content.Scripts.ComputeShaderGen.C_
             numChunks.z += dimensions.z % MAX_CHUNK_SIZE == 0 ? 0 : 1;
 
             return numChunks;
-        }
-
-        private void OnGUI()
-        {
-            GUILayout.BeginArea(new Rect(10, 10, 300, 800));
-            GUILayout.BeginVertical("box");
-
-            GUILayout.Label("Generator Controls", GUI.skin.box);
-            GUILayout.Label("Move     WASD");
-            GUILayout.Label("Zoom     Mouse Scroll");
-            float newDist = GUILayout.HorizontalSlider(cameraController.Distance, 2.0f, 800.0f);
-            if (Mathf.Abs(newDist - cameraController.Distance) > 0.001f)
-            {
-                cameraController.Distance = newDist;
-            }
-
-            GUILayout.Space(10);
-            GUILayout.Label("Dimensions", EditorStyles.boldLabel);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("X:", GUILayout.Width(20));
-            string newX = GUILayout.TextField(dimensions.x.ToString(), GUILayout.Width(60));
-            GUILayout.Label("Y:", GUILayout.Width(20));
-            string newY = GUILayout.TextField(dimensions.y.ToString(), GUILayout.Width(60));
-            GUILayout.Label("Z:", GUILayout.Width(20));
-            string newZ = GUILayout.TextField(dimensions.z.ToString(), GUILayout.Width(60));
-            GUILayout.EndHorizontal();
-
-            if (int.TryParse(newX, out int x) && int.TryParse(newY, out int y) && int.TryParse(newZ, out int z))
-            {
-                Vector3Int newDim = new Vector3Int(x, y, z);
-                if (newDim != dimensions)
-                {
-                    dimensions = newDim;
-                    OnValidate();
-                }
-            }
-
-            GUILayout.Space(10);
-            GUILayout.Label($"Surface Level {surfaceLevel:F3}", EditorStyles.boldLabel);
-            float newSurfaceLevel = GUILayout.HorizontalSlider(surfaceLevel, 0f, 1f);
-            if (Mathf.Abs(newSurfaceLevel - surfaceLevel) > 0.001f)
-            {
-                surfaceLevel = newSurfaceLevel;
-                OnValidate();
-            }
-
-            GUILayout.Space(5);
-            GUILayout.Label($"Grass Ratio: {textureData.grassBlend:F3}", EditorStyles.boldLabel);
-            float newGrassBlend = GUILayout.HorizontalSlider(textureData.grassBlend, 0f, 1f);
-
-            if (Mathf.Abs(newGrassBlend - textureData.grassBlend) > 0.001f)
-            {
-                textureData.grassBlend = newGrassBlend;
-                OnValidate();
-            }
-
-            GUILayout.Space(10);
-
-            GUILayout.Label("Seed", EditorStyles.boldLabel);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("X:", GUILayout.Width(20));
-            string stringSeed = GUILayout.TextField(noiseSettings.seed.ToString(), GUILayout.Width(60));
-            GUILayout.EndHorizontal();
-
-            int newSeed = 0;
-            if (int.TryParse(stringSeed, out int val)) newSeed = val;
-
-            GUILayout.Label("Noise", EditorStyles.boldLabel);
-            GUILayout.Space(5);
-            GUILayout.Label($"Frequency: {noiseSettings.frequency}", EditorStyles.boldLabel);
-            int newFrequency = (int)GUILayout.HorizontalSlider(noiseSettings.frequency, 1.0f, 200.0f);
-            if (noiseSettings.frequency != newFrequency)
-            {
-                noiseSettings.frequency = newFrequency;
-                OnValidate();
-            }
-
-            GUILayout.Space(5);
-            GUILayout.Label($"Octaves: {noiseSettings.octaves}", EditorStyles.boldLabel);
-            int newOctaves = (int)GUILayout.HorizontalSlider(noiseSettings.octaves, 1.0f, 6.0f);
-            if (noiseSettings.octaves != newOctaves)
-            {
-                noiseSettings.octaves = newOctaves;
-                OnValidate();
-            }
-
-            GUILayout.Space(5);
-            GUILayout.Label($"Lacunarity: {noiseSettings.lacunarity}", EditorStyles.boldLabel);
-            int newLacunarity = (int)GUILayout.HorizontalSlider(noiseSettings.lacunarity, 2.0f, 4.0f);
-            if (noiseSettings.lacunarity != newLacunarity)
-            {
-                noiseSettings.lacunarity = newLacunarity;
-                OnValidate();
-            }
-
-            GUILayout.Space(5);
-            GUILayout.Label($"Persistence: {noiseSettings.persistence}", EditorStyles.boldLabel);
-            float newPersistence = GUILayout.HorizontalSlider(noiseSettings.persistence, 0.0f, 1.0f);
-            if (Mathf.Abs(newPersistence - noiseSettings.persistence) > 0.001f)
-            {
-                noiseSettings.persistence = newPersistence;
-                OnValidate();
-            }
-
-            GUILayout.Space(5);
-            GUILayout.Label("ApplyFallOffMap", EditorStyles.boldLabel);
-            GUILayout.BeginHorizontal();
-            bool newApplyFallOff = GUILayout.Toggle(noiseSettings.applyFallOffMap, "");
-            GUILayout.EndHorizontal();
-            if (newApplyFallOff != noiseSettings.applyFallOffMap)
-            {
-                noiseSettings.applyFallOffMap = newApplyFallOff;
-                OnValidate();
-            }
-
-            GUILayout.Space(5);
-            GUILayout.Label($"FallOff Steepness: {noiseSettings.steepness}", EditorStyles.boldLabel);
-            float newSteepness = GUILayout.HorizontalSlider(noiseSettings.steepness, 0.1f, 10.0f);
-            if (Mathf.Abs(newSteepness - noiseSettings.steepness) > 0.001f)
-            {
-                noiseSettings.steepness = newSteepness;
-                OnValidate();
-            }
-
-            GUILayout.Space(5);
-            GUILayout.Label($"FallOff Center Size: {noiseSettings.centerSize}", EditorStyles.boldLabel);
-            float newCenterSize = GUILayout.HorizontalSlider(noiseSettings.centerSize, 0.1f, 10.0f);
-            if (Mathf.Abs(newCenterSize - noiseSettings.centerSize) > 0.001f)
-            {
-                noiseSettings.centerSize = newCenterSize;
-                OnValidate();
-            }
-
-            GUILayout.Space(10);
-            GUILayout.Label("Lighting", EditorStyles.boldLabel);
-            GUILayout.Space(5);
-            GUILayout.Label("Light Rotation", EditorStyles.boldLabel);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("X:", GUILayout.Width(20));
-            string rotX = GUILayout.TextField(mainLightRotation.x.ToString("F1"), GUILayout.Width(60));
-            GUILayout.Label("Y:", GUILayout.Width(20));
-            string rotY = GUILayout.TextField(mainLightRotation.y.ToString("F1"), GUILayout.Width(60));
-            GUILayout.Label("Z:", GUILayout.Width(20));
-            string rotZ = GUILayout.TextField(mainLightRotation.z.ToString("F1"), GUILayout.Width(60));
-            GUILayout.EndHorizontal();
-
-            if (float.TryParse(rotX, out float rx) && float.TryParse(rotY, out float ry) &&
-                float.TryParse(rotZ, out float rz))
-            {
-                Vector3 newRot = new Vector3(rx, ry, rz);
-                if (newRot != mainLightRotation)
-                {
-                    mainLightRotation = newRot;
-                    OnValidate();
-                }
-            }
-            
-            GUILayout.Space(5);
-            GUILayout.Label($"Intensity: {mainLight.intensity}", EditorStyles.boldLabel);
-            float newIntensity = GUILayout.HorizontalSlider(mainLight.intensity, 0f, 1f);
-            if (Mathf.Abs(newIntensity - mainLight.intensity) > 0.001f)
-            {
-                mainLight.intensity = newIntensity;
-                OnValidate();
-            }
-            
-            GUILayout.Space(5);
-            GUILayout.Label($"Shadow Strength {shadowStrength}", EditorStyles.boldLabel);
-            float newShadow = GUILayout.HorizontalSlider(shadowStrength, 0f, 1f);
-            if (Mathf.Abs(newShadow - shadowStrength) > 0.001f)
-            {
-                shadowStrength = newShadow;
-                OnValidate();
-            }
-
-            GUILayout.Space(10);
-            GUILayout.Label($"FPS: {(int)(1.0f / Time.unscaledDeltaTime)}");
-
-            GUILayout.Space(10);
-            if (GUILayout.Button(Guizmo ? "Hide Gizmo" : "Show Gizmo"))
-            {
-                Guizmo = !Guizmo;
-            }
-
-            GUILayout.EndVertical();
-            GUILayout.EndArea();
         }
     }
 
