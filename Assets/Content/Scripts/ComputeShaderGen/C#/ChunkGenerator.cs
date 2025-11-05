@@ -202,7 +202,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 300, 600));
+            GUILayout.BeginArea(new Rect(10, 10, 300, 800));
             GUILayout.BeginVertical("box");
 
             GUILayout.Label("Generator Controls", GUI.skin.box);
@@ -278,18 +278,18 @@ namespace Content.Scripts.ComputeShaderGen.C_
             GUILayout.Space(5);
             GUILayout.Label($"Octaves: {noiseSettings.octaves}", EditorStyles.boldLabel);
             int newOctaves = (int)GUILayout.HorizontalSlider(noiseSettings.octaves, 1.0f, 6.0f);
-            if (noiseSettings.frequency != newFrequency)
+            if (noiseSettings.octaves != newOctaves)
             {
-                noiseSettings.frequency = newFrequency;
+                noiseSettings.octaves = newOctaves;
                 OnValidate();
             }
 
             GUILayout.Space(5);
             GUILayout.Label($"Lacunarity: {noiseSettings.lacunarity}", EditorStyles.boldLabel);
             int newLacunarity = (int)GUILayout.HorizontalSlider(noiseSettings.lacunarity, 2.0f, 4.0f);
-            if (noiseSettings.frequency != newFrequency)
+            if (noiseSettings.lacunarity != newLacunarity)
             {
-                noiseSettings.frequency = newFrequency;
+                noiseSettings.lacunarity = newLacunarity;
                 OnValidate();
             }
 
@@ -298,7 +298,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
             float newPersistence = GUILayout.HorizontalSlider(noiseSettings.persistence, 0.0f, 1.0f);
             if (Mathf.Abs(newPersistence - noiseSettings.persistence) > 0.001f)
             {
-                noiseSettings.persistence = newFrequency;
+                noiseSettings.persistence = newPersistence;
                 OnValidate();
             }
 
@@ -328,23 +328,6 @@ namespace Content.Scripts.ComputeShaderGen.C_
             if (Mathf.Abs(newCenterSize - noiseSettings.centerSize) > 0.001f)
             {
                 noiseSettings.centerSize = newCenterSize;
-                OnValidate();
-            }
-
-            if (noiseSettings.Compare(newSeed, newFrequency, newOctaves, newLacunarity, newPersistence, newApplyFallOff,
-                    newSteepness, newCenterSize))
-            {
-                noiseSettings.seed = newSeed;
-                noiseSettings.frequency = newFrequency;
-
-                noiseSettings.octaves = newOctaves;
-                noiseSettings.lacunarity = newLacunarity;
-                noiseSettings.persistence = newPersistence;
-
-                noiseSettings.applyFallOffMap = newApplyFallOff;
-                noiseSettings.steepness = newSteepness;
-                noiseSettings.centerSize = newCenterSize;
-
                 OnValidate();
             }
 
