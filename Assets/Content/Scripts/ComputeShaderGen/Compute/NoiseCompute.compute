@@ -14,6 +14,7 @@ float4 dimensions;
 float4 globalDimensions;
 
 float4 indexOffset;
+float4 globalPos;
 float4 localPos;
 
 struct LatticeSpan
@@ -33,9 +34,11 @@ float GetFallOffValue(float3 pos)
     if (!applyFallOff)
         return 0.0;
 
-    float x = (pos.x + localPos.x) / globalDimensions.x * 2.0;
-    float y = (pos.y + localPos.y) / globalDimensions.y * 2.0;
-    float z = (pos.z + localPos.z) / globalDimensions.z * 2.0;
+    float3 samplePos = pos.xyz + localPos;
+
+    float x = samplePos.x / globalDimensions.x * 2.0;
+    float y = samplePos.y / globalDimensions.y * 2.0;
+    float z = samplePos.z / globalDimensions.z * 2.0;
 
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));
@@ -45,12 +48,12 @@ float GetFallOffValue(float3 pos)
 
 float3 GetPosition(int3 index)
 {
-    return float3(index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
+    return float3( index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
 }
 
 float3 GetNoisePosition(int3 index)
 {
-    return float3((indexOffset.x + index.x) / 1000.0f, (indexOffset.y + index.y) / 1000.0f, (indexOffset.z + index.z) / 1000.0f);
+    return (indexOffset.xyz + GetPosition(index)) / 1000.0f;
 }
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
