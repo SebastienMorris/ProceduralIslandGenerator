@@ -51,11 +51,6 @@ namespace Content.Scripts.ComputeShaderGen.C_
         #endregion
         
         #region Public Properties
-        public bool Guizmo
-        {
-            get => guizmo;
-            set => guizmo = value;
-        }
 
         public Vector3Int Dimensions
         {
@@ -148,7 +143,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void OnDrawGizmos()
         {
-            if (Guizmo)
+            if (guizmo)
             {
                 Gizmos.color = Color.white;
                 Gizmos.DrawWireCube(transform.position, dimensions);

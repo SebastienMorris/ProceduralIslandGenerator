@@ -12,7 +12,8 @@ bool applyFallOff;
 
 float4 dimensions;
 float4 globalDimensions;
-float4 globalPos;
+
+float4 indexOffset;
 float4 localPos;
 
 struct LatticeSpan
@@ -49,7 +50,7 @@ float3 GetPosition(int3 index)
 
 float3 GetNoisePosition(int3 index)
 {
-    return float3((globalPos.x + index.x) / 1000.0f, (globalPos.y + index.y) / 1000.0f, (globalPos.z + index.z) / 1000.0f);
+    return float3((indexOffset.x + index.x) / 1000.0f, (indexOffset.y + index.y) / 1000.0f, (indexOffset.z + index.z) / 1000.0f);
 }
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
@@ -124,7 +125,7 @@ float4 GenerateNoise(int3 id)
 
     for (int j = 0; j < octaves; j++)
     {
-        noiseSum += GetNoise(noisePos, hash.Add(hash, j), frequency) * amplitude;
+        noiseSum += GetNoise(noisePos, hash.Add(hash, j), freq) * amplitude;
         amplitudeSum += amplitude;
         freq *= lacunarity;
         amplitude *= persistence;

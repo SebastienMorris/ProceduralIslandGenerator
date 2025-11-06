@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Content.Scripts.ComputeShaderGen.C_;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GUI : MonoBehaviour
 {
@@ -30,6 +32,8 @@ public class GUI : MonoBehaviour
 
         private int fps = 0;
         private float fpsTimer = 1.0f;
+        
+        private GUIStyle headerLabel;
 
         private void Start()
         {
@@ -41,6 +45,16 @@ public class GUI : MonoBehaviour
 
             // Initialize text fields
             UpdateTextFieldsFromValues();
+        }
+
+        private void Update()
+        {
+            // Check if mouse button is released anywhere (even outside window)
+            if (isDragging && !Input.GetMouseButton(0))
+            {
+                isDragging = false;
+                draggingField = "";
+            }
         }
 
         private void UpdateTextFieldsFromValues()
@@ -60,6 +74,14 @@ public class GUI : MonoBehaviour
         private void OnGUI()
         {
             if (chunkGenerator == null || cameraController == null) return;
+            
+            if (headerLabel == null)
+            {
+                headerLabel = new GUIStyle(EditorStyles.boldLabel);
+                headerLabel.alignment = TextAnchor.MiddleCenter;
+                headerLabel.fontSize = 16;
+                
+            }
 
             // Calculate scale based on screen size
             float scaleX = Screen.width / referenceResolution.x;
@@ -73,25 +95,24 @@ public class GUI : MonoBehaviour
             UnityEngine.GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(guiScale, guiScale, 1));
 
             // Draw GUI using reference resolution coordinates
-            GUILayout.BeginArea(new Rect(10, 10, 300, 800));
+            GUILayout.BeginArea(new Rect(10, 10, 300, 1000));
             GUILayout.BeginVertical("box");
 
+            DrawFPSCounter();
+            GUILayout.Space(10);
             DrawCameraControls();
             GUILayout.Space(10);
             DrawDimensionsControls();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
             DrawSurfaceLevelControl();
             GUILayout.Space(5);
             DrawGrassBlendControl();
-            GUILayout.Space(10);
-            DrawSeedControl();
+            GUILayout.Space(20);
             DrawNoiseControls();
-            GUILayout.Space(10);
+            GUILayout.Space(20);
             DrawLightingControls();
-            GUILayout.Space(10);
-            DrawFPSCounter();
-            GUILayout.Space(10);
-            DrawGizmoButton();
+            GUILayout.Space(20);
+            DrawButtons();
 
             GUILayout.EndVertical();
             GUILayout.EndArea();
@@ -102,7 +123,7 @@ public class GUI : MonoBehaviour
 
         private void DrawCameraControls()
         {
-            GUILayout.Label("Generator Controls", EditorStyles.boldLabel);
+            GUILayout.Label("Generator Controls", headerLabel);
             GUILayout.Label("Move     WASD");
             GUILayout.Label("Zoom     Mouse Scroll");
             
@@ -243,7 +264,7 @@ public class GUI : MonoBehaviour
 
         private void DrawDimensionsControls()
         {
-            GUILayout.Label("Dimensions", EditorStyles.boldLabel);
+            GUILayout.Label("Dimensions:");
             GUILayout.BeginHorizontal();
             
             var dims = chunkGenerator.Dimensions;
@@ -266,7 +287,7 @@ public class GUI : MonoBehaviour
 
         private void DrawSurfaceLevelControl()
         {
-            GUILayout.Label($"Surface Level {chunkGenerator.SurfaceLevel:F3}", EditorStyles.boldLabel);
+            GUILayout.Label($"Surface Level: {chunkGenerator.SurfaceLevel:F3}");
             float newSurfaceLevel = GUILayout.HorizontalSlider(chunkGenerator.SurfaceLevel, 0f, 1f);
             if (Mathf.Abs(newSurfaceLevel - chunkGenerator.SurfaceLevel) > 0.001f)
             {
@@ -277,7 +298,7 @@ public class GUI : MonoBehaviour
         private void DrawGrassBlendControl()
         {
             var textureData = chunkGenerator.TextureData;
-            GUILayout.Label($"Grass Ratio: {textureData.grassBlend:F3}", EditorStyles.boldLabel);
+            GUILayout.Label($"Grass Ratio: {textureData.grassBlend:F3}");
             float newGrassBlend = GUILayout.HorizontalSlider(textureData.grassBlend, 0f, 1f);
 
             if (Mathf.Abs(newGrassBlend - textureData.grassBlend) > 0.001f)
@@ -286,31 +307,26 @@ public class GUI : MonoBehaviour
                 chunkGenerator.TextureData = textureData;
             }
         }
+    
 
-        private void DrawSeedControl()
+        private void DrawNoiseControls()
         {
-            GUILayout.Label("Seed", EditorStyles.boldLabel);
-            
             var noiseSettings = chunkGenerator.NoiseSettings;
-            int newSeed = DraggableIntField("Value:", noiseSettings.seed, "seed", 1f);
 
+            GUILayout.Label("Noise", headerLabel);
+            GUILayout.Space(5);
+            
+            //Seed
+            int newSeed = DraggableIntField("Seed:", noiseSettings.seed, "seed", 1f);
             if (newSeed != noiseSettings.seed)
             {
                 noiseSettings.seed = newSeed;
                 chunkGenerator.NoiseSettings = noiseSettings;
                 seedText = newSeed.ToString();
             }
-        }
-
-        private void DrawNoiseControls()
-        {
-            var noiseSettings = chunkGenerator.NoiseSettings;
-
-            GUILayout.Label("Noise", EditorStyles.boldLabel);
-            GUILayout.Space(5);
             
             // Frequency
-            GUILayout.Label($"Frequency: {noiseSettings.frequency}", EditorStyles.boldLabel);
+            GUILayout.Label($"Frequency: {noiseSettings.frequency}");
             int newFrequency = (int)GUILayout.HorizontalSlider(noiseSettings.frequency, 1.0f, 200.0f);
             if (noiseSettings.frequency != newFrequency)
             {
@@ -320,17 +336,27 @@ public class GUI : MonoBehaviour
 
             GUILayout.Space(5);
             // Octaves
-            GUILayout.Label($"Octaves: {noiseSettings.octaves}", EditorStyles.boldLabel);
+            GUILayout.Label($"Octaves: {noiseSettings.octaves}");
             int newOctaves = (int)GUILayout.HorizontalSlider(noiseSettings.octaves, 1.0f, 6.0f);
             if (noiseSettings.octaves != newOctaves)
             {
                 noiseSettings.octaves = newOctaves;
                 chunkGenerator.NoiseSettings = noiseSettings;
             }
+            
+            GUILayout.Space(5);
+            // Octaves
+            GUILayout.Label($"Lacunarity: {noiseSettings.lacunarity}");
+            int newLacunarity = (int)GUILayout.HorizontalSlider(noiseSettings.lacunarity, 2.0f, 4.0f);
+            if (noiseSettings.lacunarity != newLacunarity)
+            {
+                noiseSettings.lacunarity = newLacunarity;
+                chunkGenerator.NoiseSettings = noiseSettings;
+            }
 
             GUILayout.Space(5);
             // Persistence
-            GUILayout.Label($"Persistence: {noiseSettings.persistence:F3}", EditorStyles.boldLabel);
+            GUILayout.Label($"Persistence: {noiseSettings.persistence:F3}");
             float newPersistence = GUILayout.HorizontalSlider(noiseSettings.persistence, 0.0f, 1.0f);
             if (Mathf.Abs(newPersistence - noiseSettings.persistence) > 0.001f)
             {
@@ -340,8 +366,8 @@ public class GUI : MonoBehaviour
 
             GUILayout.Space(5);
             // Apply FallOff Map
-            GUILayout.Label("ApplyFallOffMap", EditorStyles.boldLabel);
             GUILayout.BeginHorizontal();
+            GUILayout.Label("ApplyFallOffMap:", GUILayout.Width(120));
             bool newApplyFallOff = GUILayout.Toggle(noiseSettings.applyFallOffMap, "");
             GUILayout.EndHorizontal();
             if (newApplyFallOff != noiseSettings.applyFallOffMap)
@@ -352,7 +378,7 @@ public class GUI : MonoBehaviour
 
             GUILayout.Space(5);
             // FallOff Steepness
-            GUILayout.Label($"FallOff Steepness: {noiseSettings.steepness:F3}", EditorStyles.boldLabel);
+            GUILayout.Label($"FallOff Steepness: {noiseSettings.steepness:F3}");
             float newSteepness = GUILayout.HorizontalSlider(noiseSettings.steepness, 0.1f, 10.0f);
             if (Mathf.Abs(newSteepness - noiseSettings.steepness) > 0.001f)
             {
@@ -362,7 +388,7 @@ public class GUI : MonoBehaviour
 
             GUILayout.Space(5);
             // FallOff Center Size
-            GUILayout.Label($"FallOff Center Size: {noiseSettings.centerSize:F3}", EditorStyles.boldLabel);
+            GUILayout.Label($"FallOff Center Size: {noiseSettings.centerSize:F3}");
             float newCenterSize = GUILayout.HorizontalSlider(noiseSettings.centerSize, 0.1f, 10.0f);
             if (Mathf.Abs(newCenterSize - noiseSettings.centerSize) > 0.001f)
             {
@@ -373,11 +399,11 @@ public class GUI : MonoBehaviour
 
         private void DrawLightingControls()
         {
-            GUILayout.Label("Lighting", EditorStyles.boldLabel);
+            GUILayout.Label("Lighting", headerLabel);
             GUILayout.Space(5);
             
             // Light Rotation
-            GUILayout.Label("Light Rotation", EditorStyles.boldLabel);
+            GUILayout.Label("Light Rotation");
             GUILayout.BeginHorizontal();
             
             var rotation = chunkGenerator.MainLightRotation;
@@ -399,7 +425,7 @@ public class GUI : MonoBehaviour
             
             GUILayout.Space(5);
             // Light Intensity
-            GUILayout.Label($"Intensity: {chunkGenerator.Intensity:F3}", EditorStyles.boldLabel);
+            GUILayout.Label($"Intensity: {chunkGenerator.Intensity:F3}");
             float newIntensity = GUILayout.HorizontalSlider(chunkGenerator.Intensity, 0f, 100f);
             if (Mathf.Abs(newIntensity - chunkGenerator.Intensity) > 0.001f)
             {
@@ -408,7 +434,7 @@ public class GUI : MonoBehaviour
 
             GUILayout.Space(5);
             // Shadow Strength
-            GUILayout.Label($"Shadow Strength {chunkGenerator.ShadowStrength:F3}", EditorStyles.boldLabel);
+            GUILayout.Label($"Shadow Strength {chunkGenerator.ShadowStrength:F3}");
             float newShadow = GUILayout.HorizontalSlider(chunkGenerator.ShadowStrength, 0f, 1f);
             if (Mathf.Abs(newShadow - chunkGenerator.ShadowStrength) > 0.001f)
             {
@@ -429,11 +455,22 @@ public class GUI : MonoBehaviour
             
         }
 
-        private void DrawGizmoButton()
+        private void DrawButtons()
         {
-            if (GUILayout.Button(chunkGenerator.Guizmo ? "Hide Gizmo" : "Show Gizmo"))
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(5);
+            if (GUILayout.Button("Reset", GUILayout.Width(135)))
             {
-                chunkGenerator.Guizmo = !chunkGenerator.Guizmo;
+                SceneManager.LoadScene(0);
             }
+            
+            GUILayout.Space(10);
+            
+            if (GUILayout.Button("Quit", GUILayout.Width(135)))
+            {
+                Application.Quit();
+            }
+            GUILayout.Space(5);
+            GUILayout.EndHorizontal();
         }
     }

@@ -227,6 +227,8 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void SetParams()
         {
+            Debug.Log($"Chunk {coord}: WorldPos = {transform.TransformPoint(Vector3.zero)}, LocalPos = {transform.localPosition}, IndexOffset = {indexOffset}");
+            
             compute.SetInt(Shader.PropertyToID("seed"), settings.seed);
             compute.SetInt(Shader.PropertyToID("frequency"), settings.frequency);
             compute.SetInt(Shader.PropertyToID("octaves"), settings.octaves);
@@ -239,7 +241,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
             compute.SetVector(Shader.PropertyToID("dimensions"),  float4(size.x, size.y, size.z, 0f));
             compute.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
-            compute.SetVector(Shader.PropertyToID("globalPos"), float4(indexOffset, 0f));
+            compute.SetVector(Shader.PropertyToID("indexOffset"), float4(transform.TransformPoint(Vector3.zero), 0f));
             compute.SetVector(Shader.PropertyToID("localPos"), float4(transform.localPosition, 0f));
 
             compute.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
