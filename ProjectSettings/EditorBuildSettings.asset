@@ -4,6 +4,9 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Content/Scenes/IslandGen.unity
+    guid: 4cf6082dee4115f44a7d541c86bef83a
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 4eafc5c17adb7e4458a868e4e61cf1c8, type: 2}

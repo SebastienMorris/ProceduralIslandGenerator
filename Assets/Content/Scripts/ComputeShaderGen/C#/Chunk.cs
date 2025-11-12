@@ -1,5 +1,5 @@
 using System;
-using Unity.VisualScripting;
+using IslandGen;
 using static Unity.Mathematics.math;
 using UnityEngine;
 
@@ -9,29 +9,29 @@ namespace Content.Scripts.ComputeShaderGen.C_
     {
         public Action<Chunk> OnChunkDestroyed;
 
-        private ComputeShader compute;
+        private ComputeShader _compute;
 
-        private Material renderMaterial;
-        private float grassBlend;
+        private Material _renderMaterial;
+        private float _grassBlend;
 
-        private float shadowStrength;
+        private float _shadowStrength;
 
-        private ComputeBuffer triangleBuffer;
-        private ComputeBuffer renderArgsBuffer;
+        private ComputeBuffer _triangleBuffer;
+        private ComputeBuffer _renderArgsBuffer;
 
-        private Vector3Int dimensions;
-        private Vector3Int coord;
-        private Vector3 indexOffset;
-        [SerializeField] private Vector3Int size;
-        private Vector3Int maxSize;
+        private Vector3Int _dimensions;
+        private Vector3Int _coord;
+        private Vector3 _indexOffset;
+        private Vector3Int _size;
+        private Vector3Int _maxSize;
 
-        private NoiseSettings settings;
+        private NoiseSettings _settings;
 
-        private float surfaceLevel;
+        private float _surfaceLevel;
 
-        private bool initialized = false;
-        private bool update = false;
-        private bool isDestroying = false;
+        private bool _initialized = false;
+        private bool _update = false;
+        private bool _isDestroying = false;
 
         #region Constants
 
@@ -43,26 +43,26 @@ namespace Content.Scripts.ComputeShaderGen.C_
         public void Initialize(ComputeShader marchingCompute, Shader renderShader, IslandTexture textureData, float shadowStrength, Vector3Int dimensions, Vector3Int coord,
             Vector3Int size, int maxSize, NoiseSettings settings, float surfaceLevel)
         {
-            compute = (ComputeShader)Instantiate(marchingCompute);
-            renderMaterial = new Material(renderShader);
-            renderMaterial.SetTexture(Shader.PropertyToID("_GrassTex"), textureData.grassTexture);
-            renderMaterial.SetTexture(Shader.PropertyToID("_GroundTex"), textureData.groundTexture);
-            this.grassBlend = textureData.grassBlend;
+            _compute = (ComputeShader)Instantiate(marchingCompute);
+            _renderMaterial = new Material(renderShader);
+            _renderMaterial.SetTexture(Shader.PropertyToID("_GrassTex"), textureData.grassTexture);
+            _renderMaterial.SetTexture(Shader.PropertyToID("_GroundTex"), textureData.groundTexture);
+            this._grassBlend = textureData.grassBlend;
 
-            this.shadowStrength = shadowStrength;
+            this._shadowStrength = shadowStrength;
                 
-            this.dimensions = dimensions;
-            this.coord = coord;
-            this.size = size;
-            this.maxSize = new Vector3Int(maxSize, maxSize, maxSize);
-            this.settings = settings;
-            this.surfaceLevel = surfaceLevel;
+            this._dimensions = dimensions;
+            this._coord = coord;
+            this._size = size;
+            this._maxSize = new Vector3Int(maxSize, maxSize, maxSize);
+            this._settings = settings;
+            this._surfaceLevel = surfaceLevel;
             
             SetPosition();
             SetupBuffers();
 
-            initialized = true;
-            update = true;
+            _initialized = true;
+            _update = true;
         }
 
         private void OnDisable()
@@ -72,7 +72,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void LateUpdate()
         {
-            if (!initialized || isDestroying) return;
+            if (!_initialized || _isDestroying) return;
             
             Generate();
         }
@@ -80,20 +80,20 @@ namespace Content.Scripts.ComputeShaderGen.C_
         public void OnParamUpdate(IslandTexture textureData, float shadowStrength, Vector3Int dimensions, Vector3Int numChunks, NoiseSettings settings,
             float surfaceLevel)
         {
-            if (!initialized || isDestroying) return;
+            if (!_initialized || _isDestroying) return;
 
-            this.grassBlend = textureData.grassBlend;
+            this._grassBlend = textureData.grassBlend;
 
-            this.shadowStrength = shadowStrength;
+            this._shadowStrength = shadowStrength;
             
-            this.dimensions = dimensions;
-            this.settings = settings;
-            this.surfaceLevel = surfaceLevel;
+            this._dimensions = dimensions;
+            this._settings = settings;
+            this._surfaceLevel = surfaceLevel;
 
             CheckResize(numChunks);
             SetPosition();
 
-            update = true;
+            _update = true;
         }
 
         public void ConfirmDestroy()
@@ -108,96 +108,96 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void SetPosition()
         {
-            Vector3 position = -dimensions / 2 + maxSize / 2 + coord * size;
+            Vector3 position = -_dimensions / 2 + _maxSize / 2 + _coord * _size;
 
-            if (size.x != maxSize.x)
+            if (_size.x != _maxSize.x)
             {
-                position.x = (float)maxSize.x / 2 * coord.x;
+                position.x = (float)_maxSize.x / 2 * _coord.x;
             }
             
-            if (size.y != maxSize.y)
+            if (_size.y != _maxSize.y)
             {
-                position.y = (float)maxSize.y / 2 * coord.y;
+                position.y = (float)_maxSize.y / 2 * _coord.y;
             }
             
-            if (size.z != maxSize.z)
+            if (_size.z != _maxSize.z)
             {
-                position.z = (float)maxSize.z / 2 * coord.z;
+                position.z = (float)_maxSize.z / 2 * _coord.z;
             }
 
             transform.localPosition = position;
             
-            indexOffset = new Vector3(
-                transform.position.x - maxSize.x / 2.0f,
-                transform.position.y - maxSize.y / 2.0f,
-                transform.position.z - maxSize.z / 2.0f
+            _indexOffset = new Vector3(
+                transform.position.x - _maxSize.x / 2.0f,
+                transform.position.y - _maxSize.y / 2.0f,
+                transform.position.z - _maxSize.z / 2.0f
             );
         }
 
         private void SetupBuffers()
         {
-            int numVoxels = maxSize.x * maxSize.y * maxSize.z;
+            int numVoxels = _maxSize.x * _maxSize.y * _maxSize.z;
 
-            triangleBuffer = new ComputeBuffer(numVoxels, TRIANGLE_STRIDE, ComputeBufferType.Append);
-            renderArgsBuffer = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
+            _triangleBuffer = new ComputeBuffer(numVoxels, TRIANGLE_STRIDE, ComputeBufferType.Append);
+            _renderArgsBuffer = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
 
-            compute.SetBuffer(0, Shader.PropertyToID("_Triangles"), triangleBuffer);
-            compute.SetBuffer(0, Shader.PropertyToID("_RenderArgs"), renderArgsBuffer);
+            _compute.SetBuffer(0, Shader.PropertyToID("_DrawTriangles"), _triangleBuffer);
+            _compute.SetBuffer(0, Shader.PropertyToID("_RenderArgs"), _renderArgsBuffer);
         }
 
         private void ClearBuffers()
         {
-            triangleBuffer.Release();
-            renderArgsBuffer.Release();
+            _triangleBuffer.Release();
+            _renderArgsBuffer.Release();
         }
 
         private void ResetBuffers()
         {
-            triangleBuffer.SetCounterValue(0);
+            _triangleBuffer.SetCounterValue(0);
             
             uint[] args = new uint[5] { 0, 1, 0, 0, 0 };
-            renderArgsBuffer.SetData(args);
+            _renderArgsBuffer.SetData(args);
         }
 
         private void CheckResize(Vector3Int numChunks)
         {
-            size = maxSize;
+            _size = _maxSize;
             bool destroy = false;
 
-            if (coord.x == numChunks.x - 1)
+            if (_coord.x == numChunks.x - 1)
             {
-                var rest = dimensions.x % maxSize.x;
-                size.x = rest == 0 ? maxSize.x : rest;
+                var rest = _dimensions.x % _maxSize.x;
+                _size.x = rest == 0 ? _maxSize.x : rest;
             }
-            else if (coord.x >= numChunks.x)
-            {
-                destroy = true;
-            }
-
-            if (coord.y == numChunks.y - 1)
-            {
-                var rest = dimensions.y % maxSize.y;
-                size.y = rest == 0 ? maxSize.y : rest;
-            }
-            else if (coord.y >= numChunks.y)
+            else if (_coord.x >= numChunks.x)
             {
                 destroy = true;
             }
 
-            if (coord.z == numChunks.z - 1)
+            if (_coord.y == numChunks.y - 1)
             {
-                var rest = dimensions.z % maxSize.z;
-                size.z = rest == 0 ? maxSize.z : rest;
+                var rest = _dimensions.y % _maxSize.y;
+                _size.y = rest == 0 ? _maxSize.y : rest;
             }
-            else if (coord.z >= numChunks.z)
+            else if (_coord.y >= numChunks.y)
+            {
+                destroy = true;
+            }
+
+            if (_coord.z == numChunks.z - 1)
+            {
+                var rest = _dimensions.z % _maxSize.z;
+                _size.z = rest == 0 ? _maxSize.z : rest;
+            }
+            else if (_coord.z >= numChunks.z)
             {
                 destroy = true;
             }
 
             if (destroy)
             {
-                update = false;
-                isDestroying = true;
+                _update = false;
+                _isDestroying = true;
                 ClearBuffers();
                 CallDestroy();
             }
@@ -205,51 +205,50 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void Generate()
         {
-            if (update)
+            if (_update)
             {
                 ResetBuffers();
                 SetParams();
 
-                compute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
+                _compute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
                 var a = new Vector3Int((int)x, (int)y, (int)z);
 
-                compute.Dispatch(0, Mathf.CeilToInt(size.x / (float)a.x),
-                    Mathf.CeilToInt(size.y / (float)a.y), Mathf.CeilToInt(size.z / (float)a.z));
+                _compute.Dispatch(0, Mathf.CeilToInt(_size.x / (float)a.x),
+                    Mathf.CeilToInt(_size.y / (float)a.y), Mathf.CeilToInt(_size.z / (float)a.z));
 
-                update = false;
+                _update = false;
             }
 
             Vector3 position = transform.position;
 
-            renderMaterial.SetBuffer(Shader.PropertyToID("_VertexBuffer"), triangleBuffer);
-            renderMaterial.SetVector(Shader.PropertyToID("_Origin"), float4(position, 0.0f));
-            renderMaterial.SetFloat(Shader.PropertyToID("_ShadowStrength"), shadowStrength);
-            renderMaterial.SetFloat(Shader.PropertyToID("_GrassBlend"), grassBlend);
+            _renderMaterial.SetBuffer(Shader.PropertyToID("_VertexBuffer"), _triangleBuffer);
+            _renderMaterial.SetVector(Shader.PropertyToID("_Origin"), float4(position, 0.0f));
+            _renderMaterial.SetFloat(Shader.PropertyToID("_ShadowStrength"), _shadowStrength);
+            _renderMaterial.SetFloat(Shader.PropertyToID("_GrassBlend"), _grassBlend);
 
-            Bounds bounds = new Bounds(position, size);
+            Bounds bounds = new Bounds(position, _size);
 
-            Graphics.DrawProceduralIndirect(renderMaterial, bounds, MeshTopology.Triangles, renderArgsBuffer);
+            Graphics.DrawProceduralIndirect(_renderMaterial, bounds, MeshTopology.Triangles, _renderArgsBuffer);
         }
 
         private void SetParams()
         {
-            compute.SetInt(Shader.PropertyToID("seed"), settings.seed);
-            compute.SetInt(Shader.PropertyToID("frequency"), settings.frequency);
-            compute.SetInt(Shader.PropertyToID("octaves"), settings.octaves);
-            compute.SetInt(Shader.PropertyToID("lacunarity"), settings.lacunarity);
-            compute.SetFloat(Shader.PropertyToID("persistence"), settings.persistence);
+            _compute.SetInt(Shader.PropertyToID("_Seed"), _settings.seed);
+            _compute.SetInt(Shader.PropertyToID("_Frequency"), _settings.frequency);
+            _compute.SetInt(Shader.PropertyToID("_Octaves"), _settings.octaves);
+            _compute.SetInt(Shader.PropertyToID("_Lacunarity"), _settings.lacunarity);
+            _compute.SetFloat(Shader.PropertyToID("_Persistence"), _settings.persistence);
 
-            compute.SetFloat(Shader.PropertyToID("steepness"), settings.steepness);
-            compute.SetFloat(Shader.PropertyToID("centerSize"), settings.centerSize);
-            compute.SetBool(Shader.PropertyToID("applyFallOff"), settings.applyFallOffMap);
+            _compute.SetBool(Shader.PropertyToID("_ApplyFallOff"), _settings.applyFallOff);
+            _compute.SetFloat(Shader.PropertyToID("_Steepness"), _settings.steepness);
+            _compute.SetFloat(Shader.PropertyToID("_CenterSize"), _settings.centerSize);
 
-            compute.SetVector(Shader.PropertyToID("dimensions"),  float4(size.x, size.y, size.z, 0f));
-            compute.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
-            compute.SetVector(Shader.PropertyToID("indexOffset"), float4(indexOffset, 0f));
-            compute.SetVector(Shader.PropertyToID("globalPos"), float4(transform.position, 0f));
-            compute.SetVector(Shader.PropertyToID("localPos"), float4(transform.localPosition, 0f));
+            _compute.SetVector(Shader.PropertyToID("_ChunkSize"),  float4(_size.x, _size.y, _size.z, 0f));
+            _compute.SetVector(Shader.PropertyToID("_Dimensions"), float4(this._dimensions.x, this._dimensions.y, this._dimensions.z, 0f));
+            _compute.SetVector(Shader.PropertyToID("_IndexOffset"), float4(_indexOffset, 0f));
+            _compute.SetVector(Shader.PropertyToID("_LocalChunkPos"), float4(transform.localPosition, 0f));
 
-            compute.SetFloat(Shader.PropertyToID("isoLevel"), surfaceLevel);
+            _compute.SetFloat(Shader.PropertyToID("_IsoLevel"), _surfaceLevel);
         }
     }
 }

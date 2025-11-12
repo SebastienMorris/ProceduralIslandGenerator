@@ -1,17 +1,13 @@
 using System;
 using System.Collections;
-using System.ComponentModel;
-using UnityEditor;
+using IslandGen;
 using UnityEngine;
-using UnityEngine.Experimental.GlobalIllumination;
-using UnityEngine.Rendering;
-using UnityEngine.Serialization;
 
 namespace Content.Scripts.ComputeShaderGen.C_
 {
     public class ChunkGenerator : MonoBehaviour
     {
-        [SerializeField] private bool guizmo;
+        [SerializeField] private bool gizmo;
         [SerializeField] CameraController cameraController;
 
 
@@ -36,17 +32,19 @@ namespace Content.Scripts.ComputeShaderGen.C_
         [Header("Noise Properties")] [SerializeField]
         private NoiseSettings noiseSettings = NoiseSettings.Default;
 
+        
         public Action<IslandTexture, float, Vector3Int, Vector3Int, NoiseSettings, float> OnValueUpdate;
 
-        private Vector3Int numCurrentChunks = Vector3Int.zero;
+        
+        private Vector3Int _numCurrentChunks = Vector3Int.zero;
 
-        private bool initilised = false;
-        private bool update = false;
-        private bool isUpdating = false;
+        private bool _initialised = false;
+        private bool _update = false;
+        private bool _isUpdating = false;
 
-        #region constants
+        #region Constants
 
-        private int MAX_CHUNK_SIZE = 50;
+            private int MAX_CHUNK_SIZE = 50;
 
         #endregion
         
@@ -143,7 +141,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void OnDrawGizmos()
         {
-            if (guizmo)
+            if (gizmo)
             {
                 Gizmos.color = Color.white;
                 Gizmos.DrawWireCube(transform.position, dimensions);
@@ -163,21 +161,21 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
         private void UpdateValue()
         {
-            if (!initilised || isUpdating) return;
+            if (!_initialised || _isUpdating) return;
 
             OnValueUpdate?.Invoke(textureData, shadowStrength, dimensions, GetNumChunks(), noiseSettings, surfaceLevel);
-            update = true;
+            _update = true;
         }
 
         private void Update()
         {
-            if (update)
+            if (_update)
             {
                 mainLight.transform.rotation = Quaternion.Euler(mainLightRotation);
 
-                isUpdating = true;
+                _isUpdating = true;
                 CheckNewChunks();
-                update = false;
+                _update = false;
                 StartCoroutine(EndUpdating());
             }
         }
@@ -185,7 +183,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
         private IEnumerator EndUpdating()
         {
             yield return new WaitForEndOfFrame();
-            isUpdating = false;
+            _isUpdating = false;
             yield return null;
         }
 
@@ -217,16 +215,16 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
                         AddChunk(coord, size);
 
-                        numCurrentChunks.z++;
+                        _numCurrentChunks.z++;
                     }
 
-                    numCurrentChunks.y++;
+                    _numCurrentChunks.y++;
                 }
 
-                numCurrentChunks.x++;
+                _numCurrentChunks.x++;
             }
 
-            initilised = true;
+            _initialised = true;
         }
 
         private void AddChunk(Vector3Int coord, Vector3Int size)
@@ -244,7 +242,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
         private void CheckNewChunks()
         {
             var newNumChunks = GetNumChunks();
-            Vector3Int numChunksAdd = newNumChunks - numCurrentChunks;
+            Vector3Int numChunksAdd = newNumChunks - _numCurrentChunks;
 
             for (int x = 0; x < newNumChunks.x; x++)
             {
@@ -260,7 +258,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
 
                     for (int z = 0; z < newNumChunks.z; z++)
                     {
-                        if (x < numCurrentChunks.x && y < numCurrentChunks.y && z < numCurrentChunks.z) continue;
+                        if (x < _numCurrentChunks.x && y < _numCurrentChunks.y && z < _numCurrentChunks.z) continue;
 
                         Vector3Int coord = new Vector3Int(x, y, z);
 
@@ -275,7 +273,7 @@ namespace Content.Scripts.ComputeShaderGen.C_
                 }
             }
 
-            numCurrentChunks = newNumChunks;
+            _numCurrentChunks = newNumChunks;
         }
 
         private void OnChunkDestroyed(Chunk chunk)
@@ -306,5 +304,65 @@ namespace Content.Scripts.ComputeShaderGen.C_
         [Range(0.0f, 1.0f)] public float grassBlend;
 
         public static IslandTexture Default => new IslandTexture() { grassBlend = 0.5f };
+    }
+}
+
+namespace IslandGen
+{
+
+
+
+    [Serializable]
+    public struct NoiseSettings
+    {
+        public int seed;
+        [Range(1, 200)] public int frequency;
+
+        [Range(1, 6)] public int octaves;
+        [Range(2, 4)] public int lacunarity;
+        [Range(0f, 1f)] public float persistence;
+
+        public bool applyFallOff;
+        [Range(0.1f, 10f)] public float steepness;
+        [Range(0.1f, 10f)] public float centerSize;
+
+        public static NoiseSettings Default => new NoiseSettings
+        {
+            frequency = 50, octaves = 1, lacunarity = 2, persistence = 0.5f, applyFallOff = true, steepness = 2f,
+            centerSize = 10
+        };
+
+        public bool Compare(NoiseSettings noiseSettings)
+        {
+            if (seed != noiseSettings.seed) return false;
+            if (frequency != noiseSettings.frequency) return false;
+
+            if (octaves != noiseSettings.octaves) return false;
+            if (lacunarity != noiseSettings.lacunarity) return false;
+            if (Mathf.Abs(persistence - noiseSettings.persistence) >= 0.001) return false;
+
+            if (applyFallOff != noiseSettings.applyFallOff) return false;
+            if (Mathf.Abs(steepness - noiseSettings.steepness) >= 0.001) return false;
+            if (Mathf.Abs(centerSize - noiseSettings.centerSize) >= 0.001) return false;
+
+            return true;
+        }
+
+        public bool Compare(int seed, int frequency, int octaves, int lacunarity, float persistence,
+            bool applyFallOffMap, float steepness, float centerSize)
+        {
+            if (this.seed != seed) return false;
+            if (this.frequency != frequency) return false;
+
+            if (this.octaves != octaves) return false;
+            if (this.lacunarity != lacunarity) return false;
+            if (Mathf.Abs(this.persistence - persistence) >= 0.001) return false;
+
+            if (this.applyFallOff != applyFallOffMap) return false;
+            if (Mathf.Abs(this.steepness - steepness) >= 0.001) return false;
+            if (Mathf.Abs(this.centerSize - centerSize) >= 0.001) return false;
+
+            return true;
+        }
     }
 }

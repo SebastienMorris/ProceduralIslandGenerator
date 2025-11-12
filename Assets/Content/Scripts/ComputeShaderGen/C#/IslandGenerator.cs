@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using IslandGen;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
@@ -168,7 +169,7 @@ public class IslandGenerator : MonoBehaviour
 	    
 		compute.SetFloat(Shader.PropertyToID("steepness"), noiseSettings.steepness);
 		compute.SetFloat(Shader.PropertyToID("centerSize"), noiseSettings.centerSize);
-		compute.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOffMap);
+		compute.SetBool(Shader.PropertyToID("applyFallOff"), noiseSettings.applyFallOff);
 		
 		compute.SetVector(Shader.PropertyToID("dimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
 		compute.SetVector(Shader.PropertyToID("globalDimensions"), float4(this.dimensions.x, this.dimensions.y, this.dimensions.z, 0f));
@@ -227,56 +228,6 @@ public class IslandGenerator : MonoBehaviour
 		ComputeBuffer argsBuffer = new ComputeBuffer(numArgs, stride, ComputeBufferType.IndirectArguments);
 		argsBuffer.SetData(args);
 		return argsBuffer;
-	}
-}
-
-
-[Serializable]
-public struct NoiseSettings
-{
-	public int seed;
-	[Range(1, 200)] public int frequency;
-	
-	[Range(1, 6)] public int octaves;
-	[Range(2, 4)] public int lacunarity;
-	[Range(0f, 1f)] public float persistence;
-
-	public bool applyFallOffMap;
-	[Range(0.1f, 10f)] public float steepness;
-	[Range(0.1f, 10f)] public float centerSize;
-	
-	public static NoiseSettings Default => new NoiseSettings{frequency = 50, octaves = 1, lacunarity = 2, persistence = 0.5f, applyFallOffMap = true, steepness = 2f, centerSize = 10};
-
-	public bool Compare(NoiseSettings noiseSettings)
-	{
-		if(seed != noiseSettings.seed) return false;
-		if (frequency != noiseSettings.frequency) return false;
-		
-		if (octaves != noiseSettings.octaves) return false;
-		if(lacunarity != noiseSettings.lacunarity) return false;
-		if(Mathf.Abs(persistence - noiseSettings.persistence) >= 0.001 ) return false;
-		
-		if(applyFallOffMap != noiseSettings.applyFallOffMap) return false;
-		if(Mathf.Abs(steepness - noiseSettings.steepness) >= 0.001) return false;
-		if(Mathf.Abs(centerSize - noiseSettings.centerSize) >= 0.001) return false;
-		
-		return true;
-	}
-	
-	public bool Compare(int seed, int frequency, int octaves, int lacunarity, float persistence, bool applyFallOffMap, float steepness, float centerSize)
-	{
-		if(this.seed != seed) return false;
-		if (this.frequency != frequency) return false;
-		
-		if (this.octaves != octaves) return false;
-		if(this.lacunarity != lacunarity) return false;
-		if(Mathf.Abs(this.persistence - persistence) >= 0.001 ) return false;
-		
-		if(this.applyFallOffMap != applyFallOffMap) return false;
-		if(Mathf.Abs(this.steepness - steepness) >= 0.001) return false;
-		if(Mathf.Abs(this.centerSize - centerSize) >= 0.001) return false;
-		
-		return true;
 	}
 }
 

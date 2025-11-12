@@ -1,21 +1,20 @@
 #include "HashCompute.compute"
 
-int seed;
-int frequency;
-int octaves;
-int lacunarity;
-float persistence;
+int _Seed;
+int _Frequency;
+int _Octaves;
+int _Lacunarity;
+float _Persistence;
 
-float steepness;
-float centerSize;
 bool applyFallOff;
+float _Steepness;
+float _CenterSize;
 
-float4 dimensions;
-float4 globalDimensions;
+float4 _ChunkSize;
+float4 _Dimensions;
 
-float4 indexOffset;
-float4 globalPos;
-float4 localPos;
+float4 _IndexOffset;
+float4 _LocalChunkPos;
 
 struct LatticeSpan
 {
@@ -26,7 +25,7 @@ struct LatticeSpan
 
 float FallOffEvaluate(float value)
 {
-    return pow(abs(value), steepness) / (pow(abs(value), steepness) + pow(abs(centerSize - centerSize * value), steepness));
+    return pow(abs(value), _Steepness) / (pow(abs(value), _Steepness) + pow(abs(_CenterSize - _CenterSize * value), _Steepness));
 }
 
 float GetFallOffValue(float3 pos)
@@ -34,11 +33,11 @@ float GetFallOffValue(float3 pos)
     if (!applyFallOff)
         return 0.0;
 
-    float3 samplePos = pos.xyz + localPos;
+    float3 samplePos = pos.xyz + _LocalChunkPos;
 
-    float x = samplePos.x / globalDimensions.x * 2.0;
-    float y = samplePos.y / globalDimensions.y * 2.0;
-    float z = samplePos.z / globalDimensions.z * 2.0;
+    float x = samplePos.x / _Dimensions.x * 2.0;
+    float y = samplePos.y / _Dimensions.y * 2.0;
+    float z = samplePos.z / _Dimensions.z * 2.0;
 
     float val1 = max(abs(x), abs(y));
     float val2 = max(val1, abs(z));
@@ -48,12 +47,12 @@ float GetFallOffValue(float3 pos)
 
 float3 GetPosition(int3 index)
 {
-    return float3( index.x - dimensions.x / 2, index.y - dimensions.y / 2, index.z - dimensions.z / 2);
+    return float3( index.x - _ChunkSize.x / 2, index.y - _ChunkSize.y / 2, index.z - _ChunkSize.z / 2);
 }
 
 float3 GetNoisePosition(int3 index)
 {
-    return (indexOffset.xyz + GetPosition(index)) / 1000.0f;
+    return (_IndexOffset.xyz + GetPosition(index)) / 1000.0f;
 }
 
 LatticeSpan GetLatticeSpan(float coordinates, int frequency)
@@ -116,9 +115,9 @@ float4 GenerateNoise(int3 id)
     hash.primeC = 0xC2B2AE3D;
     hash.primeD = 0x27D4EB2F;
     hash.primeE = 0x165667B1;
-    hash.accumulator = seed + hash.primeE;
+    hash.accumulator = _Seed + hash.primeE;
 
-    int freq = frequency;
+    int freq = _Frequency;
     float amplitude = 1.0;
     float amplitudeSum = 0.0;
     float noiseSum = 0.0;
@@ -126,12 +125,12 @@ float4 GenerateNoise(int3 id)
     float3 noisePos = GetNoisePosition(id);
     float3 pos = GetPosition(id);
 
-    for (int j = 0; j < octaves; j++)
+    for (int j = 0; j < _Octaves; j++)
     {
         noiseSum += GetNoise(noisePos, hash.Add(hash, j), freq) * amplitude;
         amplitudeSum += amplitude;
-        freq *= lacunarity;
-        amplitude *= persistence;
+        freq *= _Lacunarity;
+        amplitude *= _Persistence;
     }
 
     float val = (noiseSum / amplitudeSum / 2 + 0.5) - GetFallOffValue(pos);

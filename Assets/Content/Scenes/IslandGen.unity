@@ -378,7 +378,7 @@ MonoBehaviour:
   noiseSettings:
     seed: 0
     frequency: 50
-    octaves: 1
+    octaves: 2
     lacunarity: 2
     persistence: 0.5
     applyFallOffMap: 1
